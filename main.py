@@ -196,7 +196,7 @@ def generate_video(title_data, overwrite=False):
         print( '  preview found in', outfile )
         return
 
-    png_file = title_img_dir + pathlib.Path(title_data[3]).stem.replace('.mp4','.png')
+    png_file = title_img_dir + pathlib.Path(title_data[3]).stem + '.png'
 
     input_file = title_data[3]
     info = probe( input_file )
@@ -224,6 +224,7 @@ def generate_video(title_data, overwrite=False):
         '-filter_complex', filter,
         '-map', '[v]',
         '-map', '[a]',
+        '-crf', '20',
         '-c:v', 'libx264',
         '-pix_fmt', 'yuv420p',
         '-profile:v', 'main',
@@ -270,7 +271,7 @@ if __name__ == '__main__':
                         ]
         print(index, video_metadata, '\n\n')
         generate_img(video_metadata)
-        # generate_video(video_metadata)
+        generate_video(video_metadata)
         srt_delay(input_vid_dir + row['Filename'].replace('.mp4','.srt'), output_vid_dir + row['Filename'].replace('.mp4','.srt'))
     
     
