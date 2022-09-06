@@ -6,15 +6,15 @@ import yaml
 import os
 import re
 import pathlib
+import os.path as osp
 
 IMG_BG_NAME = 'preview-background-2022.png'
-CSV_FILE = 'VP_2022_metadata-TEST.xlsx'
-title_img_dir = 'video_dir/title_img/'
-input_vid_dir = 'video_dir/VIS Short/'
-output_vid_dir = 'video_dir/VP_out_VIS Short/'
-DIRS = [title_img_dir, input_vid_dir, output_vid_dir]
-for dir in DIRS:
-    pathlib.Path(dir).mkdir(parents=True, exist_ok=True)
+CSV_FILE = 'Session Breakdown.xlsx'
+SHEET_NAME = 'LATEST'
+VIDEO_DIR = 'Video and Subtitles by Session'
+OUTPUT_DIR = 'output'
+title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
+pathlib.Path(title_img_dir).mkdir(parents=True, exist_ok=True)
 
 def probe( filename ):
     '''get some information about a video file'''
@@ -176,10 +176,9 @@ def generate_img(title_data):
 
     draw_text( lines, 300, 850, 40  )
 
-    png_file = title_img_dir + pathlib.Path(title_data[3]).stem + '.png'
+    png_file = osp.join(title_img_dir, pathlib.Path(title_data[3]).stem + '.png')
 
     final.write_to_png( png_file )
-
 
 
 def generate_video(title_data, overwrite=False):
@@ -189,10 +188,10 @@ def generate_video(title_data, overwrite=False):
     
     # check if preview already exists
     
-    outfile = os.path.join( title_data[5] )
+    outfile = osp.join( title_data[5] )
     
 
-    if not overwrite and os.path.exists( outfile ):
+    if not overwrite and osp.exists( outfile ):
         print( '  preview found in', outfile )
         return
 
@@ -241,13 +240,20 @@ def generate_video(title_data, overwrite=False):
         print( '  abort, deleted', outfile )
         raise
 
+
 def srt_delay(filename, output_filename, seconds=5):
+    
     def line_delay(line, seconds):
-        PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+),(\d+)'
-        if '-->' not in line: return line
-        res = re.search(PATTERN, line)
         # only 25 + 5 seconds so we simplify the logic here
-        return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02},{res.group(4)} --> {res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02},{res.group(8)}\n'
+        if '-->' not in line: return line
+        PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+),(\d+)'
+        res = re.search(PATTERN, line)
+        if res is not None: return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02},{res.group(4)} --> {res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02},{res.group(8)}\n'
+        PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+)'
+        res = re.search(PATTERN, line)
+        if res is not None: return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02},{res.group(4)} --> {res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02},{0}\n'
+        raise NotImplementedError('unhandle subtitles', line)
+        
         
     with open(filename, encoding='utf8') as f:
         lines = f.readlines()
@@ -255,24 +261,103 @@ def srt_delay(filename, output_filename, seconds=5):
     with open(output_filename, 'w', encoding='utf8') as f:
         f.writelines(lines)
 
-if __name__ == '__main__':
-    df = pd.read_excel(open(CSV_FILE, 'rb'),sheet_name='VP_ShortPaper', engine='openpyxl')
-    clean_df = df.loc[df['Filename'].notna()]
-    for index, row in clean_df.iterrows():
 
-        video_metadata = [row['Type'],
-                        row['Title'],
-                        row['Authors'],
-                        input_vid_dir + row['Filename'],
-                        row['Session Name'] + ': ' + row['Session Time'],
+def sbv_delay(filename, output_filename, seconds=5):
+    def line_delay(line, seconds):
+        # only 25 + 5 seconds so we simplify the logic here
+        PATTERN = '(\d+):(\d+):(\d+).(\d+),(\d+):(\d+):(\d+).(\d+)'
+        if '-->' not in line: return line
+        res = re.search(PATTERN, line)
+        if res is not None: return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02}.{res.group(4)},{res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02}.{res.group(8)}\n'
+        raise NotImplementedError('unhandle subtitles', line)
+        
+    with open(filename, encoding='utf8') as f:
+        lines = f.readlines()
+    lines = [line_delay(line, seconds) for line in lines]
+    with open(output_filename, 'w', encoding='utf8') as f:
+        f.writelines(lines)
+
+
+def subtitle_delay(filename, input_dir, output_dir):
+    print(filename)
+    if '.mp4' in filename: filename = filename.replace('.mp4', '')
+    if osp.exists(osp.join(input_dir, filename + '.srt')):
+        srt_delay(osp.join(input_dir, filename + '.srt'), osp.join(output_dir, filename + '.srt'))
+    elif osp.exists(osp.join(input_dir, filename + '.sbv')):
+        sbv_delay(osp.join(input_dir, filename + '.sbv'), osp.join(output_dir, filename + '.sbv'))
+    else:
+        print(f'Error: No subtitle is found for {osp.join(input_dir, filename)}')
+        return
+    
+
+def check(video_filename):
+    if not osp.exists(video_filename): return False
+    return osp.exists(video_filename.replace('.mp4', '.srt')) or osp.exists(video_filename.replace('.mp4', '.sbv'))
+
+# if __name__ == '__main__':
+#     df = pd.read_excel(open(CSV_FILE, 'rb'),sheet_name='VP_ShortPaper', engine='openpyxl')
+#     clean_df = df.loc[df['Filename'].notna()]
+#     for index, row in clean_df.iterrows():
+#         input_video_filename = osp.join(input_vid_dir, row['Filename'])
+#         input_video_filename = osp.join(output_vid_dir, row['Filename'])
+#         if not check(input_video_filename):
+#             print(f"Error: missing files for {input_video_filename}")
+#             continue
+#         video_metadata = [row['Type'],
+#                         row['Title'],
+#                         row['Authors'],
+#                         input_video_filename,
+#                         row['Session Name'] + ': ' + row['Session Time'],
+#                         #'Social Sciences, Software Tools, Journalism, and Storytelling: Friday, 0815 - 0830',
+#                         output_vid_dir,
+#                         row['Award']
+#                         ]
+#         print(index, video_metadata, '\n\n')
+#         generate_img(video_metadata)
+#         generate_video(video_metadata)
+#         srt_delay(row['Filename'], input_vid_dir, output_vid_dir)
+def get_video_filename(input_dir, filename):
+    from glob import glob
+    result = list(glob(osp.join(input_dir, filename + '*Preview.mp4')))
+    if len(result) == 1: return pathlib.Path(result[0]).name
+    return ''
+
+def type_convert(session_id):
+    if 'cga' in session_id: return 'CG&A Paper'
+    if 'short' in session_id: return 'VIS Short Paper'
+    if 'sig' in session_id: return 'SIGGRAPH Paper'
+    if 'vr' in session_id: return 'VR Paper'
+    if 'full' in session_id: return 'VIS Full Paper'
+    raise NotImplementedError('unhandled session_id: ', session_id)
+
+if __name__ == '__main__':
+    df = pd.read_excel(open(CSV_FILE, 'rb'),sheet_name=SHEET_NAME, engine='openpyxl')
+    cnt = 0
+    clean_df = df.loc[df['paper_id'].notna()]
+    session_time = None
+    for index, row in clean_df.iterrows():
+        if not pd.isna(row['session']): session_time = row['session']
+        session_folder = row['session_name'].replace('/', '-')
+        input_vid_dir = osp.join(VIDEO_DIR, f"{row['session_id']}-{session_folder}")
+        output_vid_dir = osp.join(OUTPUT_DIR, f"{row['session_id']}-{session_folder}")
+        pathlib.Path(output_vid_dir).mkdir(parents=True, exist_ok=True)
+        video_filename = get_video_filename(input_vid_dir, row['paper_id'])
+        input_video_filename = osp.join(input_vid_dir, video_filename)
+        output_video_filename = osp.join(output_vid_dir, video_filename)
+        if video_filename == '' or not check(input_video_filename):
+            # print(f"Error: missing files for {input_video_filename}")
+            continue
+        video_metadata = [type_convert(row['session_id']),
+                        row['title'],
+                        row['authors'],
+                        input_video_filename,
+                        row['session_name'] + ': ' + session_time,
                         #'Social Sciences, Software Tools, Journalism, and Storytelling: Friday, 0815 - 0830',
-                        output_vid_dir + row['Filename'],
-                        row['Award']
+                        output_video_filename,
+                        ''#row['Award']
                         ]
-        print(index, video_metadata, '\n\n')
-        generate_img(video_metadata)
-        generate_video(video_metadata)
-        srt_delay(input_vid_dir + row['Filename'].replace('.mp4','.srt'), output_vid_dir + row['Filename'].replace('.mp4','.srt'))
-    
-    
+        # print(index, video_metadata, '\n\n')
+        # generate_img(video_metadata)
+        # generate_video(video_metadata)
+        subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
     
