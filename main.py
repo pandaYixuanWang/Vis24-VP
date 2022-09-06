@@ -108,20 +108,20 @@ def generate_img(title_data):
     ctx.paint()
 
     # draw paper type
-    ctx.select_font_face( "Futura Medium" )
+    ctx.select_font_face( "Tahoma Bold" )
     ctx.set_font_size( 30 )
     ctx.set_source_rgba( 0, 0, 0, 1 )
 
-    draw_text( [title_data[0].upper()], 1080, 112, 50 )
+    draw_text( [title_data[0].upper()], 300, 500, 50 )
 
     # draw title
-    ctx.select_font_face( "Gotham Bold" )
-    ctx.set_source_rgba( 0, 0, 0, 1 )
+    ctx.select_font_face( "Tahoma" )
+    ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
 
     for fontsize in range( 60, 50, -2 ):
 
         ctx.set_font_size( fontsize )
-        lines = linebreak( title_data[1], 1800 )
+        lines = linebreak( title_data[1], 1500 )
 
         if len(lines) < 4:
             break
@@ -131,50 +131,50 @@ def generate_img(title_data):
     if len(lines) < 1:
         ctx.translate( 0,  0.3*fontsize )
 
-    draw_text( lines, 90, 420-1.2*fontsize*len(lines), fontsize )
+    draw_text( lines, 300, 750-1.2*fontsize*len(lines), fontsize )
 
     # draw authors
-    ctx.select_font_face( "Gotham Book" )
-    ctx.set_source_rgba( 0, 0, 0, 1 )
+    ctx.select_font_face( "Tahoma" )
+    ctx.set_source_rgba( 0.114, 0.192, 0.376, 1)
 
     for author_fontsize in range( 50, 40, -2 ):
 
         ctx.set_font_size( author_fontsize )
-        lines = linebreak( title_data[2], 1800, ',' )
+        lines = linebreak( title_data[2], 1500, ',' )
 
         if len(lines) < 4:
             break
 
-    draw_text( lines, 90, 480, 35 )
+    draw_text( lines, 300, 760, 35 )
     
     # draw awards information
     if(title_data[6] == 'Best Paper' or title_data[6] == 'Honorable Mention'):
-        ctx.select_font_face( "Gotham Bold" )
-        ctx.set_source_rgba( 0, 0, 0, 1 )
+        ctx.select_font_face( "Tahoma" )
+        ctx.set_source_rgba( 0.83, 0.686, 0.216, 1 )
 
         for session_fontsize in range( 60, 50, -2 ):
 
             ctx.set_font_size( session_fontsize )
-            lines = linebreak( '*'+title_data[6], 1800, ',' )
+            lines = linebreak( '*'+title_data[6], 1500, ',' )
 
             if len(lines) < 4:
                 break
 
-        draw_text( lines, 90, 570, 40 )
+        draw_text( lines, 300, 850, 40 )
     
     # draw session info
-    ctx.select_font_face( "Gotham Bold" )
+    ctx.select_font_face( "Tahoma" )
     ctx.set_source_rgba( 0, 0, 0, 1 )
 
     for session_fontsize in range( 80, 40, -2 ):
 
         ctx.set_font_size( session_fontsize )
-        lines = linebreak( title_data[4], 1800, ',' )
+        lines = linebreak( title_data[4], 1500, ',' )
 
         if len(lines) < 4:
             break
 
-    draw_text( lines, 90, 700, 40 )
+    draw_text( lines, 300, 850, 40  )
 
     png_file = title_img_dir + pathlib.Path(title_data[3]).stem + '.png'
 
