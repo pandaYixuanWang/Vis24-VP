@@ -5,8 +5,9 @@ import subprocess
 import yaml
 import os
 import re
-import pathlib
+from pathlib import Path
 import os.path as osp
+from glob import glob
 
 IMG_BG_NAME = 'preview-background-2022.png'
 CSV_FILE = 'Session Breakdown.xlsx'
@@ -14,7 +15,7 @@ SHEET_NAME = 'LATEST'
 VIDEO_DIR = 'Video and Subtitles by Session'
 OUTPUT_DIR = 'output'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
-pathlib.Path(title_img_dir).mkdir(parents=True, exist_ok=True)
+Path(title_img_dir).mkdir(parents=True, exist_ok=True)
 
 def probe( filename ):
     '''get some information about a video file'''
@@ -176,7 +177,7 @@ def generate_img(title_data):
 
     draw_text( lines, 300, 850, 40  )
 
-    png_file = osp.join(title_img_dir, pathlib.Path(title_data[3]).stem + '.png')
+    png_file = osp.join(title_img_dir, Path(title_data[3]).stem + '.png')
 
     final.write_to_png( png_file )
 
@@ -195,7 +196,7 @@ def generate_video(title_data, overwrite=False):
         print( '  preview found in', outfile )
         return
 
-    png_file = title_img_dir + pathlib.Path(title_data[3]).stem + '.png'
+    png_file = title_img_dir + Path(title_data[3]).stem + '.png'
 
     input_file = title_data[3]
     info = probe( input_file )
@@ -317,9 +318,8 @@ def check(video_filename):
 #         generate_video(video_metadata)
 #         srt_delay(row['Filename'], input_vid_dir, output_vid_dir)
 def get_video_filename(input_dir, filename):
-    from glob import glob
     result = list(glob(osp.join(input_dir, filename + '*Preview.mp4')))
-    if len(result) == 1: return pathlib.Path(result[0]).name
+    if len(result) == 1: return Path(result[0]).name
     return ''
 
 def type_convert(session_id):
@@ -328,7 +328,33 @@ def type_convert(session_id):
     if 'sig' in session_id: return 'SIGGRAPH Paper'
     if 'vr' in session_id: return 'VR Paper'
     if 'full' in session_id: return 'VIS Full Paper'
-    raise NotImplementedError('unhandled session_id: ', session_id)
+    raise NotImplementedError('unknown session_id: ', session_id)
+
+def time_convert(session_time):
+    TIME_MAP = {
+        '1': '0900-1015',
+        '2': '1045-1200',
+        '3': '1400-1515',
+        '4': '1545-1700',
+    }
+    if session_time[-1] in TIME_MAP: return TIME_MAP[session_time[-1]]
+    raise NotImplementedError('unknown session_time:', session_time)
+
+def session_folder_convert(session_id, session_name):
+    folder_name = f"{session_id}-{session_name}"
+    if osp.exists(osp.join(VIDEO_DIR, folder_name)): return folder_name
+    if osp.exists(osp.join(VIDEO_DIR, folder_name.replace('/', '-'))): return folder_name.replace('/', '-')
+    if osp.exists(osp.join(VIDEO_DIR, folder_name.replace('/', '~'))): return folder_name.replace('/', '~')
+    folder = glob(osp.join(VIDEO_DIR, session_id+'-*'))
+    if len(folder) == 1:
+        folder = Path(folder[0]).name
+        print('Warning: possibly incorrect folder name:', folder_name, folder)
+        return folder
+    else:
+        print("Error: fail to match folder name: ", folder_name)
+        return ''
+        # raise NotImplementedError('unknown folder_name:', folder_name)
+
 
 if __name__ == '__main__':
     df = pd.read_excel(open(CSV_FILE, 'rb'),sheet_name=SHEET_NAME, engine='openpyxl')
@@ -336,11 +362,13 @@ if __name__ == '__main__':
     clean_df = df.loc[df['paper_id'].notna()]
     session_time = None
     for index, row in clean_df.iterrows():
-        if not pd.isna(row['session']): session_time = row['session']
-        session_folder = row['session_name'].replace('/', '-')
-        input_vid_dir = osp.join(VIDEO_DIR, f"{row['session_id']}-{session_folder}")
-        output_vid_dir = osp.join(OUTPUT_DIR, f"{row['session_id']}-{session_folder}")
-        pathlib.Path(output_vid_dir).mkdir(parents=True, exist_ok=True)
+        if not pd.isna(row['session']): session_time = time_convert(row['session'])
+        session_folder = session_folder_convert(row['session_id'], row['session_name'])
+        if session_folder == '':
+            continue
+        input_vid_dir = osp.join(VIDEO_DIR, session_folder)
+        output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
+        Path(output_vid_dir).mkdir(parents=True, exist_ok=True)
         video_filename = get_video_filename(input_vid_dir, row['paper_id'])
         input_video_filename = osp.join(input_vid_dir, video_filename)
         output_video_filename = osp.join(output_vid_dir, video_filename)
@@ -357,7 +385,7 @@ if __name__ == '__main__':
                         ''#row['Award']
                         ]
         # print(index, video_metadata, '\n\n')
-        # generate_img(video_metadata)
+        generate_img(video_metadata)
         # generate_video(video_metadata)
-        subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
+        # subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
     
