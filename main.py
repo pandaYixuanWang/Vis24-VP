@@ -1,3 +1,5 @@
+from ctypes import alignment
+from tkinter import CENTER
 import pandas as pd
 import os
 import cairocffi as cairo
@@ -110,11 +112,31 @@ def generate_img(title_data):
 
     # draw paper type
     ctx.select_font_face( "Tahoma Bold" )
-    ctx.set_font_size( 30 )
+    ctx.set_font_size( 50 )
     ctx.set_source_rgba( 0, 0, 0, 1 )
 
-    draw_text( [title_data[0].upper()], 300, 500, 50 )
+    draw_text( [title_data[0].upper()], 300, 400, 50 )
 
+    # draw awards information
+    if(title_data[6] == 'Best Paper' or title_data[6] == 'Honorable Mention'):
+        ctx.select_font_face( "Tahoma" )
+        ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 )
+
+        # same line with type
+        fontsize = 50
+        ctx.set_font_size( fontsize )
+        draw_text( [title_data[6].upper()], 900, 400, fontsize )
+
+        # top right corner
+        # fontsize = 80
+        # ctx.set_font_size( fontsize )
+        # lines = linebreak( title_data[6].upper(), 600)
+
+        # if (title_data[6] == 'Honorable Mention'):
+        #     draw_text( lines, 1350, 100, fontsize )
+        # elif (title_data[6] == 'Best Paper'):
+        #     draw_text( lines, 1350, 200, fontsize )
+        
     # draw title
     ctx.select_font_face( "Tahoma" )
     ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
@@ -122,17 +144,21 @@ def generate_img(title_data):
     for fontsize in range( 60, 50, -2 ):
 
         ctx.set_font_size( fontsize )
-        lines = linebreak( title_data[1], 1500 )
+        lines = linebreak( title_data[1], 1300 )
 
         if len(lines) < 4:
             break
 
-    if len(lines) > 2:
-        ctx.translate( 0,  0.3*fontsize )
-    if len(lines) < 1:
-        ctx.translate( 0,  0.3*fontsize )
+    if len(lines) == 1:
+        draw_text( lines, 300, 550, fontsize )
+    else:
+        draw_text( lines, 300, 700-1.2*fontsize*len(lines), fontsize )
+    # if len(lines) > 2:
+    #     ctx.translate( 0,  0.3*fontsize )
+    # if len(lines) < 1:
+    #     ctx.translate( 0,  0.3*fontsize )
 
-    draw_text( lines, 300, 750-1.2*fontsize*len(lines), fontsize )
+    
 
     # draw authors
     ctx.select_font_face( "Tahoma" )
@@ -146,22 +172,8 @@ def generate_img(title_data):
         if len(lines) < 4:
             break
 
-    draw_text( lines, 300, 760, 35 )
+    draw_text( lines, 300, 725, 35 )
     
-    # draw awards information
-    if(title_data[6] == 'Best Paper' or title_data[6] == 'Honorable Mention'):
-        ctx.select_font_face( "Tahoma" )
-        ctx.set_source_rgba( 0.83, 0.686, 0.216, 1 )
-
-        for session_fontsize in range( 60, 50, -2 ):
-
-            ctx.set_font_size( session_fontsize )
-            lines = linebreak( '*'+title_data[6], 1500, ',' )
-
-            if len(lines) < 4:
-                break
-
-        draw_text( lines, 300, 850, 40 )
     
     # draw session info
     ctx.select_font_face( "Tahoma" )
@@ -170,12 +182,12 @@ def generate_img(title_data):
     for session_fontsize in range( 80, 40, -2 ):
 
         ctx.set_font_size( session_fontsize )
-        lines = linebreak( title_data[4], 1500, ',' )
+        lines = linebreak( title_data[4], 2000)
 
         if len(lines) < 4:
             break
 
-    draw_text( lines, 300, 850, 40  )
+    draw_text( lines, 300, 875, 40 )
 
     png_file = osp.join(title_img_dir, Path(title_data[3]).stem + '.png')
 
