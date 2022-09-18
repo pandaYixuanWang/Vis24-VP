@@ -120,23 +120,21 @@ def generate_img(title_data):
     # draw awards information
     if(title_data[6] == 'Best Paper' or title_data[6] == 'Honorable Mention'):
 
-        if (title_data[6] == 'Best Paper'):    
-            ctx.rectangle( 860, 385, 360, 95 )
-            # Background Colour:
-            ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Background
-            # ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
-            ctx.fill()
-        elif (title_data[6] == 'Honorable Mention'):
-            ctx.rectangle( 860, 385, 590, 95 )
-            # Background Colour:
-            ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Background
-            # ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
-            ctx.fill()
+        # if (title_data[6] == 'Best Paper'):    
+        #     ctx.rectangle( 860, 385, 360, 95 )
+        # elif (title_data[6] == 'Honorable Mention'):
+        #     ctx.rectangle( 860, 385, 590, 95 )
+
+        # # Background Colour:
+        # # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Background
+        # ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
+        # ctx.fill()
         
         ctx.select_font_face( "Tahoma" )
         # Text Colour:
-        ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 ) # Gold Text
+        #ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 ) # Gold Text
         # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Text
+        ctx.set_source_rgba( 0.945, 0.341, 0.133, 1 ) # Orange Text
         
         # Position: same line with paper type
         fontsize = 50
