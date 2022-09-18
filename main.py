@@ -115,19 +115,35 @@ def generate_img(title_data):
     ctx.set_font_size( 50 )
     ctx.set_source_rgba( 0, 0, 0, 1 )
 
-    draw_text( [title_data[0].upper()], 300, 400, 50 )
+    draw_text( [title_data[0].upper()], 125, 400, 50 )
 
     # draw awards information
     if(title_data[6] == 'Best Paper' or title_data[6] == 'Honorable Mention'):
-        ctx.select_font_face( "Tahoma" )
-        ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 )
 
-        # same line with type
+        if (title_data[6] == 'Best Paper'):    
+            ctx.rectangle( 860, 385, 360, 95 )
+            # Background Colour:
+            ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Background
+            # ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
+            ctx.fill()
+        elif (title_data[6] == 'Honorable Mention'):
+            ctx.rectangle( 860, 385, 590, 95 )
+            # Background Colour:
+            ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Background
+            # ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
+            ctx.fill()
+        
+        ctx.select_font_face( "Tahoma" )
+        # Text Colour:
+        ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 ) # Gold Text
+        # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Text
+        
+        # Position: same line with paper type
         fontsize = 50
         ctx.set_font_size( fontsize )
         draw_text( [title_data[6].upper()], 900, 400, fontsize )
 
-        # top right corner
+        ## Position: top right corner
         # fontsize = 80
         # ctx.set_font_size( fontsize )
         # lines = linebreak( title_data[6].upper(), 600)
@@ -144,20 +160,15 @@ def generate_img(title_data):
     for fontsize in range( 60, 50, -2 ):
 
         ctx.set_font_size( fontsize )
-        lines = linebreak( title_data[1], 1300 )
+        lines = linebreak( title_data[1], 1450 )
 
         if len(lines) < 4:
             break
 
     if len(lines) == 1:
-        draw_text( lines, 300, 550, fontsize )
+        draw_text( lines, 125, 550, fontsize )
     else:
-        draw_text( lines, 300, 700-1.2*fontsize*len(lines), fontsize )
-    # if len(lines) > 2:
-    #     ctx.translate( 0,  0.3*fontsize )
-    # if len(lines) < 1:
-    #     ctx.translate( 0,  0.3*fontsize )
-
+        draw_text( lines, 125, 700-1.2*fontsize*len(lines), fontsize )
     
 
     # draw authors
@@ -167,12 +178,12 @@ def generate_img(title_data):
     for author_fontsize in range( 50, 40, -2 ):
 
         ctx.set_font_size( author_fontsize )
-        lines = linebreak( title_data[2], 1500, ',' )
+        lines = linebreak( title_data[2], 1900, ',' )
 
         if len(lines) < 4:
             break
 
-    draw_text( lines, 300, 725, 35 )
+    draw_text( lines, 125, 725, 35 )
     
     
     # draw session info
@@ -182,12 +193,12 @@ def generate_img(title_data):
     for session_fontsize in range( 80, 40, -2 ):
 
         ctx.set_font_size( session_fontsize )
-        lines = linebreak( title_data[4], 2000)
+        lines = linebreak( title_data[4], 3000)
 
         if len(lines) < 4:
             break
 
-    draw_text( lines, 300, 875, 40 )
+    draw_text( lines, 125, 875, 40 )
 
     png_file = osp.join(title_img_dir, Path(title_data[3]).stem + '.png')
 
@@ -344,13 +355,22 @@ def type_convert(session_id):
 
 def time_convert(session_time):
     TIME_MAP = {
-        '1': '0900-1015',
-        '2': '1045-1200',
-        '3': '1400-1515',
-        '4': '1545-1700',
+        '1': '09:00-10:15',
+        '2': '10:45-12:00',
+        '3': '14:00-15:15',
+        '4': '15:45-17:00',
     }
     if session_time[-1] in TIME_MAP: return TIME_MAP[session_time[-1]]
     raise NotImplementedError('unknown session_time:', session_time)
+
+def date_convert(session_date):
+    DATE_MAP = {
+        'w': 'Wednesday (Oct 19)',
+        't': 'Thursday (Oct 20)',
+        'f': 'Friday (Oct 21)',
+    }
+    if session_date[0] in DATE_MAP: return DATE_MAP[session_date[0]]
+    raise NotImplementedError('unknown session_date:', session_date)
 
 def session_folder_convert(session_id, session_name):
     folder_name = f"{session_id}-{session_name}"
@@ -373,8 +393,10 @@ if __name__ == '__main__':
     cnt = 0
     clean_df = df.loc[df['paper_id'].notna()]
     session_time = None
+    session_date = None
     for index, row in clean_df.iterrows():
         if not pd.isna(row['session']): session_time = time_convert(row['session'])
+        if not pd.isna(row['session']): session_date = date_convert(row['session'])
         session_folder = session_folder_convert(row['session_id'], row['session_name'])
         if session_folder == '':
             continue
@@ -391,13 +413,14 @@ if __name__ == '__main__':
                         row['title'],
                         row['authors'],
                         input_video_filename,
-                        row['session_name'] + ': ' + session_time,
+                        row['session_name'] + '\\n' + session_time + ', ' + session_date,
                         #'Social Sciences, Software Tools, Journalism, and Storytelling: Friday, 0815 - 0830',
                         output_video_filename,
-                        ''#row['Award']
+                        row['award']
                         ]
         # print(index, video_metadata, '\n\n')
         generate_img(video_metadata)
+        # break
         # generate_video(video_metadata)
         # subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
     
