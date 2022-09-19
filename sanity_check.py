@@ -11,8 +11,8 @@ unmatched_video = []
 unmatched_srts = []
 unmatched_sbvs = []
 for video in videos:
-    if video.replace('.mp4', '.srt') in srts: print(video);continue
-    if video.replace('.mp4', '.sbv') in sbvs: print(video);continue
+    if video.replace('.mp4', '.srt') in srts: continue
+    if video.replace('.mp4', '.sbv') in sbvs: continue
     unmatched_video.append(video)
     
 
