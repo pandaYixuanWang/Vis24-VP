@@ -274,9 +274,11 @@ def srt_delay(filename, output_filename, seconds=5):
         res = re.search(PATTERN, line)
         if res is not None: return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02},{res.group(4)} --> {res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02},{0}\n'
         raise NotImplementedError('unhandle subtitles', line)
-        
-        
-    with open(filename, encoding='utf8') as f:
+    if not osp.exists(filename):
+        print("script not found: ", filename)
+        return
+
+    with open(filename, encoding='utf8', errors='replace') as f:
         lines = f.readlines()
     lines = [line_delay(line, seconds) for line in lines]
     with open(output_filename, 'w', encoding='utf8') as f:
@@ -287,16 +289,27 @@ def sbv_delay(filename, output_filename, seconds=5):
     def line_delay(line, seconds):
         # only 25 + 5 seconds so we simplify the logic here
         PATTERN = '(\d+):(\d+):(\d+).(\d+),(\d+):(\d+):(\d+).(\d+)'
-        if '-->' not in line: return line
         res = re.search(PATTERN, line)
-        if res is not None: return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02}.{res.group(4)},{res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02}.{res.group(8)}\n'
+        if res is not None: 
+            return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02},{res.group(4)} --> {res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02}.{res.group(8)}\n'
+        if line.count(':') < 2: return line
         raise NotImplementedError('unhandle subtitles', line)
         
     with open(filename, encoding='utf8') as f:
         lines = f.readlines()
     lines = [line_delay(line, seconds) for line in lines]
-    with open(output_filename, 'w', encoding='utf8') as f:
-        f.writelines(lines)
+    COUNTER = 1
+    ret = []
+    for line in lines:
+        if '-->' not in line:
+            ret.append(line)
+        else:
+            ret.append(str(COUNTER)+'\n')
+            ret.append(line)
+            COUNTER += 1
+
+    with open(output_filename.replace('sbv', 'srt'), 'w', encoding='utf8') as f:
+        f.writelines(ret)
 
 
 def subtitle_delay(filename, input_dir, output_dir):
@@ -366,6 +379,95 @@ def session_folder_convert(session_id, session_name):
         return ''
         # raise NotImplementedError('unknown folder_name:', folder_name)
 
+def get_duration(filename):
+    proc = subprocess.Popen( [
+            'ffprobe', 
+            '-show_format',
+            '-show_streams',
+            '-print_format', 'json',
+            '-i', filename
+        ],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE )
+    out, err = proc.communicate()
+    raw_info = yaml.load(out, Loader=yaml.FullLoader)
+    duration = float( raw_info['format']['duration'] )
+    return duration
+
+def merge(df, session_id):
+    df = df.loc[df['session_id'] == session_id]
+    assert df.shape[0] > 0
+    session_name = list(df['session_name'])[0]
+    session_folder = session_folder_convert(session_id, session_name)
+    output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
+    filelist = [osp.join(output_vid_dir, get_video_filename(output_vid_dir, str(row['paper_id']))) for index, row in df.iterrows()]
+    durations = [get_duration(filename) for filename in filelist]
+    outfile = osp.join(output_vid_dir, f'{session_folder}.mp4')
+    n = len(filelist)
+    cmd = ['ffmpeg']
+    for filename in filelist: cmd.append('-i'); cmd.append(filename)
+    cmd = cmd + [
+        '-filter_complex', ''.join([f'[{i}:v] [{i}:a] ' for i in range(n)]) + f'concat=n={n}:v=1:a=1 [v] [a]',
+        '-map', '[v]',
+        '-map', '[a]',
+        '-y', outfile
+    ]
+    try:
+        call(cmd)
+    except Exception as e:
+        # on error, delete the output file
+        os.unlink( outfile )
+        return f'failed to generate {outfile}'
+    merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','.srt'))
+
+def merge_scripts(files, durations, outfile):
+    def time_delay(t1, t2):
+        h1, m1, s1, ms1 = t1
+        h2, m2, s2, ms2 = t2
+        ms = (ms1 + ms2)
+        s = (s1 + s2 + ms // 1000)
+        m = (m1 + m2 + s // 60)
+        h = (h1 + h2 + m // 60)
+        return h, m%60, s%60, ms%1000
+    def time2str(t):
+        return f'{t[0]}:{t[1]:02}:{t[2]:02},{t[3]:03}'
+    def line_delay(line, t):
+        PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+),(\d+)'
+        res = re.search(PATTERN, line)
+        if res is not None:
+            h1, m1, s1, ms1 = int(res.group(1)), int(res.group(2)), int(res.group(3)), int(res.group(4))
+            h2, m2, s2, ms2 = int(res.group(5)), int(res.group(6)), int(res.group(7)), int(res.group(8))
+            return f'{time2str(time_delay((h1,m1,s1,ms1), t))} --> {time2str(time_delay((h2,m2,s2,ms2), t))}\n'
+        PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+)'
+        res = re.search(PATTERN, line)
+        if res is not None:
+            h1, m1, s1, ms1 = int(res.group(1)), int(res.group(2)), int(res.group(3)), int(res.group(4))
+            h2, m2, s2, ms2 = int(res.group(5)), int(res.group(6)), int(res.group(7)), 0
+            return f'{time2str(time_delay((h1,m1,s1,ms1), t))} --> {time2str(time_delay((h2,m2,s2,ms2), t))}\n'
+        raise Exception('error in sparse time: ', line)
+    accumulate_t = 0
+    t = (0, 0, 0, 0)
+    counter = 1
+    lines = []
+    for i, file in enumerate(files):
+        with open(file, encoding='utf8') as f:
+            for line in f.readlines():
+                if len(line.strip()) < 3 and line.strip().isdigit():
+                    lines.append(f'{counter}\n')
+                    counter += 1
+                elif '-->' in line:
+                    lines.append(line_delay(line, t))
+                else:
+                    lines.append(line)
+        lines.append('\n')
+        accumulate_t += durations[i]
+        t = (int(accumulate_t//3600), int(accumulate_t//60) % 60, int(accumulate_t) % 60, int(1000*accumulate_t) % 1000)
+        
+    with open(outfile, 'w', encoding='utf8') as f:
+        f.writelines(lines)
+
+
+
 
 if __name__ == '__main__':
     df = pd.read_excel(open(CSV_FILE, 'rb'),sheet_name=SHEET_NAME, engine='openpyxl')
@@ -374,39 +476,39 @@ if __name__ == '__main__':
     session_time = None
     session_date = None
     n_total = clean_df.shape[0]
-    # for index, row in tqdm(clean_df.iterrows(), total=clean_df.shape[0]):
-    for index, row in clean_df.iterrows():
-        if not pd.isna(row['session']): session_time = time_convert(row['session'])
-        if not pd.isna(row['session']): session_date = date_convert(row['session'])
-        session_folder = session_folder_convert(row['session_id'], row['session_name'])
-        if session_folder == '':
-            print(f'[{index}/{n_total}]', f'Error: could not find folder {session_folder}')
-            continue
-        input_vid_dir = osp.join(VIDEO_DIR, session_folder)
-        output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
-        Path(output_vid_dir).mkdir(parents=True, exist_ok=True)
-        video_filename = get_video_filename(input_vid_dir, row['paper_id'])
-        input_video_filename = osp.join(input_vid_dir, video_filename)
-        output_video_filename = osp.join(output_vid_dir, video_filename)
-        if video_filename == '' or not check(input_video_filename):
-            print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
-            continue
-        video_metadata = [type_convert(row['session_id']),
-                        row['title'],
-                        row['authors'],
-                        input_video_filename,
-                        row['session_name'] + '\\n' + session_time + ', ' + session_date,
-                        output_video_filename,
-                        row['award']
-                        ]
-        try:
-            generate_img(video_metadata)
-            msg = generate_video(video_metadata)
-            subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
-            print(f'[{index}/{n_total}]', msg)
-            cnt += 1
-        except Exception as e:
-            print(input_video_filename)
-            raise Exception(e)
-    print(f"process {cnt} files successfully")
+    merge(clean_df, 'full1')
+    # for index, row in clean_df.iterrows():
+    #     if not pd.isna(row['session']): session_time = time_convert(row['session'])
+    #     if not pd.isna(row['session']): session_date = date_convert(row['session'])
+    #     session_folder = session_folder_convert(row['session_id'], row['session_name'])
+    #     if session_folder == '':
+    #         print(f'[{index}/{n_total}]', f'Error: could not find folder {session_folder}')
+    #         continue
+    #     input_vid_dir = osp.join(VIDEO_DIR, session_folder)
+    #     output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
+    #     Path(output_vid_dir).mkdir(parents=True, exist_ok=True)
+    #     video_filename = get_video_filename(input_vid_dir, row['paper_id'])
+    #     input_video_filename = osp.join(input_vid_dir, video_filename)
+    #     output_video_filename = osp.join(output_vid_dir, video_filename)
+    #     if video_filename == '' or not check(input_video_filename):
+    #         print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
+    #         continue
+    #     video_metadata = [type_convert(row['session_id']),
+    #                     row['title'],
+    #                     row['authors'],
+    #                     input_video_filename,
+    #                     row['session_name'] + '\\n' + session_time + ', ' + session_date,
+    #                     output_video_filename,
+    #                     row['award']
+    #                     ]
+    #     try:
+    #         # generate_img(video_metadata)
+    #         # msg = generate_video(video_metadata)
+    #         subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
+    #         # print(f'[{index}/{n_total}]', msg)
+    #         cnt += 1
+    #     except Exception as e:
+    #         print(input_video_filename)
+    #         raise Exception(e)
+    # print(f"process {cnt} files successfully")
     
