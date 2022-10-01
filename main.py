@@ -10,6 +10,7 @@ import os.path as osp
 from glob import glob
 from tqdm import tqdm
 from subprocess import call
+from shutil import copy2
 
 IMG_BG_NAME = 'preview-background-2022.png'
 CSV_FILE = 'Session Breakdown.xlsx'
@@ -17,7 +18,9 @@ SHEET_NAME = 'LATEST'
 VIDEO_DIR = 'Video and Subtitles by Session'
 OUTPUT_DIR = 'output'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
+merged_video_dir = osp.join(OUTPUT_DIR, 'merged')
 Path(title_img_dir).mkdir(parents=True, exist_ok=True)
+Path(merged_video_dir).mkdir(parents=True, exist_ok=True)
 
 def probe( filename ):
     '''get some information about a video file'''
@@ -273,6 +276,9 @@ def srt_delay(filename, output_filename, seconds=5):
         PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+)'
         res = re.search(PATTERN, line)
         if res is not None: return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02},{res.group(4)} --> {res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02},{0}\n'
+        PATTERN = '(\d+):(\d+),(\d+) --> (\d+):(\d+),(\d+)'
+        res = re.search(PATTERN, line)
+        if res is not None: return f'0:{res.group(1)}:{int(res.group(2))+seconds:02},{res.group(3)} --> {0}:{res.group(4)}:{int(res.group(5))+seconds:02},{res.group(6)}\n'
         raise NotImplementedError('unhandle subtitles', line)
     if not osp.exists(filename):
         print("script not found: ", filename)
@@ -334,13 +340,23 @@ def get_video_filename(input_dir, filename):
     return ''
 
 
-def type_convert(session_id):
-    if 'cga' in session_id: return 'CG&A Paper'
-    if 'short' in session_id: return 'VIS Short Paper'
-    if 'sig' in session_id: return 'SIGGRAPH Paper'
-    if 'vr' in session_id: return 'VR Paper'
-    if 'full' in session_id: return 'VIS Full Paper'
-    raise NotImplementedError('unknown session_id: ', session_id)
+# def type_convert(session_id):
+#     if 'cga' in session_id: return 'CG&A Paper'
+#     if 'short' in session_id: return 'VIS Short Paper'
+#     if 'sig' in session_id: return 'SIGGRAPH Paper'
+#     if 'vr' in session_id: return 'VR Paper'
+#     if 'full' in session_id: return 'VIS Full Paper'
+#     raise NotImplementedError('unknown session_id: ', session_id)
+
+def type_convert(paper_id):
+    if 'v-cga' in paper_id: return 'CG&A Paper'
+    if 'v-short' in paper_id: return 'VIS Short Paper'
+    if 'v-siggraph' in paper_id: return 'SIGGRAPH Paper'
+    if 'v-vr' in paper_id: return 'VR Paper'
+    if 'v-full' in paper_id: return 'VIS Full Paper'
+    if 'v-tvcg' in paper_id: return 'TVCG Paper'
+    raise NotImplementedError('unknown paper_id: ', paper_id)
+
 
 
 def time_convert(session_time):
@@ -394,16 +410,24 @@ def get_duration(filename):
     duration = float( raw_info['format']['duration'] )
     return duration
 
-def merge(df, session_id):
+def merge(df, session_id, overwrite=False):
     df = df.loc[df['session_id'] == session_id]
     assert df.shape[0] > 0
     session_name = list(df['session_name'])[0]
     session_folder = session_folder_convert(session_id, session_name)
     output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
     filelist = [osp.join(output_vid_dir, get_video_filename(output_vid_dir, str(row['paper_id']))) for index, row in df.iterrows()]
+    if not all(['mp4' in filename for filename in filelist]):
+        msg = f'Skip {session_folder} due to missing videos'
+        return msg
+    n = len(filelist)
     durations = [get_duration(filename) for filename in filelist]
     outfile = osp.join(output_vid_dir, f'{session_folder}.mp4')
-    n = len(filelist)
+
+    merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','.srt'))
+
+    if not overwrite and osp.exists(outfile):
+        return f'merged video found in {outfile}'
     cmd = ['ffmpeg']
     for filename in filelist: cmd.append('-i'); cmd.append(filename)
     cmd = cmd + [
@@ -414,11 +438,13 @@ def merge(df, session_id):
     ]
     try:
         call(cmd)
+        copy2(outfile, osp.join(merged_video_dir, f'{session_folder}.mp4'))
+        return f'generate {outfile} successfully'
     except Exception as e:
         # on error, delete the output file
         os.unlink( outfile )
         return f'failed to generate {outfile}'
-    merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','.srt'))
+    
 
 def merge_scripts(files, durations, outfile):
     def time_delay(t1, t2):
@@ -462,9 +488,11 @@ def merge_scripts(files, durations, outfile):
         lines.append('\n')
         accumulate_t += durations[i]
         t = (int(accumulate_t//3600), int(accumulate_t//60) % 60, int(accumulate_t) % 60, int(1000*accumulate_t) % 1000)
+    
         
     with open(outfile, 'w', encoding='utf8') as f:
         f.writelines(lines)
+    copy2(outfile, merged_video_dir)
 
 
 
@@ -476,39 +504,48 @@ if __name__ == '__main__':
     session_time = None
     session_date = None
     n_total = clean_df.shape[0]
-    merge(clean_df, 'full1')
+    print(n_total)
     # for index, row in clean_df.iterrows():
-    #     if not pd.isna(row['session']): session_time = time_convert(row['session'])
-    #     if not pd.isna(row['session']): session_date = date_convert(row['session'])
-    #     session_folder = session_folder_convert(row['session_id'], row['session_name'])
-    #     if session_folder == '':
-    #         print(f'[{index}/{n_total}]', f'Error: could not find folder {session_folder}')
-    #         continue
-    #     input_vid_dir = osp.join(VIDEO_DIR, session_folder)
-    #     output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
-    #     Path(output_vid_dir).mkdir(parents=True, exist_ok=True)
-    #     video_filename = get_video_filename(input_vid_dir, row['paper_id'])
-    #     input_video_filename = osp.join(input_vid_dir, video_filename)
-    #     output_video_filename = osp.join(output_vid_dir, video_filename)
-    #     if video_filename == '' or not check(input_video_filename):
-    #         print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
-    #         continue
-    #     video_metadata = [type_convert(row['session_id']),
-    #                     row['title'],
-    #                     row['authors'],
-    #                     input_video_filename,
-    #                     row['session_name'] + '\\n' + session_time + ', ' + session_date,
-    #                     output_video_filename,
-    #                     row['award']
-    #                     ]
-    #     try:
-    #         # generate_img(video_metadata)
-    #         # msg = generate_video(video_metadata)
-    #         subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
-    #         # print(f'[{index}/{n_total}]', msg)
-    #         cnt += 1
-    #     except Exception as e:
-    #         print(input_video_filename)
-    #         raise Exception(e)
-    # print(f"process {cnt} files successfully")
+    #     tmp = glob(f'Video and Subtitles by Session/*/{row["paper_id"]}*')
+    #     # if len(tmp) == 0: print(row['paper_id'])
+    #     if len(tmp) == 0: continue
+    #     if row['session_id'] not in tmp[0]:
+    #         print(row['session_id'], tmp[0])
+    for index, (_, row) in enumerate(clean_df.iterrows()):
+        if not pd.isna(row['session']): session_time = time_convert(row['session'])
+        if not pd.isna(row['session']): session_date = date_convert(row['session'])
+        session_folder = session_folder_convert(row['session_id'], row['session_name'])
+        if session_folder == '':
+            print(f'[{index}/{n_total}]', f'Error: could not find folder {session_folder}')
+            continue
+        input_vid_dir = osp.join(VIDEO_DIR, session_folder)
+        output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
+        Path(output_vid_dir).mkdir(parents=True, exist_ok=True)
+        video_filename = get_video_filename(input_vid_dir, row['paper_id'])
+        input_video_filename = osp.join(input_vid_dir, video_filename)
+        output_video_filename = osp.join(output_vid_dir, video_filename)
+        if video_filename == '' or not check(input_video_filename):
+            print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
+            continue
+        video_metadata = [type_convert(row['paper_id']),
+                        row['title'],
+                        row['authors'],
+                        input_video_filename,
+                        row['session_name'] + '\\n' + session_time + ', ' + session_date,
+                        output_video_filename,
+                        row['award']
+                        ]
+        try:
+            # generate_img(video_metadata)
+            msg = generate_video(video_metadata)
+            subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
+            print(f'[{index}/{n_total}]', msg)
+            cnt += 1
+        except Exception as e:
+            print(input_video_filename)
+            raise Exception(e)
+    print(f"process {cnt} files successfully")
+    for session_id in sorted(set(clean_df['session_id'])):
+        msg = merge(clean_df, session_id)
+        print(msg)
     
