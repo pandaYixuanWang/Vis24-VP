@@ -505,12 +505,6 @@ if __name__ == '__main__':
     session_date = None
     n_total = clean_df.shape[0]
     print(n_total)
-    # for index, row in clean_df.iterrows():
-    #     tmp = glob(f'Video and Subtitles by Session/*/{row["paper_id"]}*')
-    #     # if len(tmp) == 0: print(row['paper_id'])
-    #     if len(tmp) == 0: continue
-    #     if row['session_id'] not in tmp[0]:
-    #         print(row['session_id'], tmp[0])
     for index, (_, row) in enumerate(clean_df.iterrows()):
         if not pd.isna(row['session']): session_time = time_convert(row['session'])
         if not pd.isna(row['session']): session_date = date_convert(row['session'])
@@ -538,7 +532,7 @@ if __name__ == '__main__':
         try:
             # generate_img(video_metadata)
             msg = generate_video(video_metadata)
-            subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
+            # subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
             print(f'[{index}/{n_total}]', msg)
             cnt += 1
         except Exception as e:
