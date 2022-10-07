@@ -12,12 +12,13 @@ from glob import glob
 from tqdm import tqdm
 from subprocess import call
 from shutil import copy2
+from utils import add_title_img
 
 IMG_BG_NAME = 'preview-background-2022.png'
-CSV_FILE = 'Session Breakdown.xlsx'
-SHEET_NAME = 'LATEST'
-VIDEO_DIR = 'Video and Subtitles by Session'
-OUTPUT_DIR = 'output'
+VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
+CSV_FILE = 'Metadata Sheet (ALL COMBINED).xlsx'
+SHEET_NAME = 'Main Conference'
+OUTPUT_DIR = 'output/MAIN CONFERENCE'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
 merged_video_dir = osp.join(OUTPUT_DIR, 'merged')
 Path(title_img_dir).mkdir(parents=True, exist_ok=True)
@@ -212,6 +213,92 @@ def generate_img(title_data, overwrite=False):
     draw_text( lines, 125, 875, 40 )
 
     final.write_to_png( png_file )
+    copy2(png_file, osp.join(title_img_dir, Path(title_data[5]).stem + '.png'))
+
+
+
+def generate_session_img(png_file, session_name, session_time, overwrite=False):
+    if osp.exists(png_file) and not overwrite:
+        return
+   
+    final = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1920, 1080)
+    ctx = cairo.Context(final)
+
+    def linebreak(text, max_width, sep=' '):
+        lines = []
+
+        for text in text.split("\\n"):
+            tokens = text.split(sep)
+            line = []
+
+            for token in tokens:
+                extline = line + [token]
+                width = ctx.text_extents(sep.join(extline))[2]
+
+                if width > max_width:
+                    lines.append((sep.join(line) + sep))
+                    line = [token]
+                else:
+                    line = extline
+
+            lines.append(sep.join(line))
+
+        return [l.strip() for l in lines]
+
+    def draw_text(text, x, y, size):
+
+        ctx.set_font_size(size)
+
+        y += ctx.font_extents()[0]
+
+        for num, line in enumerate(text):
+            ctx.move_to(x, y)
+            ctx.show_text(line)
+            y = y + 1.2 * size
+
+    img_bkgnd = cairo.ImageSurface.create_from_png( IMG_BG_NAME )
+
+    # clear image
+    ctx.rectangle( 0, 0, 1920, 1080 )
+    ctx.set_source_rgba( 0, 0, 0, 1 )
+    ctx.fill()
+
+    ctx.set_source_surface( img_bkgnd )
+    ctx.paint()
+
+    # draw title
+    ctx.select_font_face( "Tahoma Bold" )
+    ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
+
+    for fontsize in range( 60, 50, -2 ):
+
+        ctx.set_font_size( fontsize )
+        lines = linebreak( session_name, 1450 )
+
+        if len(lines) < 4:
+            break
+
+    if len(lines) == 1:
+        draw_text( lines, 125, 550, fontsize )
+    else:
+        draw_text( lines, 125, 700-1.2*fontsize*len(lines), fontsize )
+    
+
+    # draw authors
+    ctx.select_font_face( "Tahoma" )
+    ctx.set_source_rgba( 0.114, 0.192, 0.376, 1)
+
+    for author_fontsize in range( 50, 40, -2 ):
+
+        ctx.set_font_size( author_fontsize )
+        lines = linebreak( session_time, 1900, ',' )
+
+        if len(lines) < 4:
+            break
+
+    draw_text( lines, 125, 725, 35 )
+    final.write_to_png( png_file )
+    copy2(png_file, title_img_dir)
 
 
 def generate_video(title_data, overwrite=False):
@@ -381,11 +468,12 @@ def time_convert(session_time):
 
 def date_convert(session_date):
     DATE_MAP = {
-        'w': 'Wednesday (Oct 19)',
-        't': 'Thursday (Oct 20)',
-        'f': 'Friday (Oct 21)',
+        'tue': 'Tuesday (Oct 18)',
+        'wed': 'Wednesday (Oct 19)',
+        'thu': 'Thursday (Oct 20)',
+        'fri': 'Friday (Oct 21)',
     }
-    if session_date[0] in DATE_MAP: return DATE_MAP[session_date[0]]
+    if session_date[0:3] in DATE_MAP: return DATE_MAP[session_date[0:3]]
     raise NotImplementedError('unknown session_date:', session_date)
 
 
@@ -397,12 +485,10 @@ def session_folder_convert(session_id, session_name):
     folder = glob(osp.join(VIDEO_DIR, session_id+'-*'))
     if len(folder) == 1:
         folder = Path(folder[0]).name
-        print('Warning: possibly incorrect folder name:', folder_name, folder)
         return folder
     else:
         print("Error: fail to match folder name: ", folder_name)
         return ''
-        # raise NotImplementedError('unknown folder_name:', folder_name)
 
 def get_duration(filename):
     proc = subprocess.Popen( [
@@ -423,6 +509,8 @@ def merge(df, session_id, overwrite=False, strict=False):
     df = df.loc[df['session_id'] == session_id]
     assert df.shape[0] > 0
     session_name = list(df['session_name'])[0]
+    session_time = 'tues2' if session_id == 'full1' else list(df['session'])[0]
+    session_time = time_convert(session_time) + ', ' + date_convert(session_time)
     session_folder = session_folder_convert(session_id, session_name)
     output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
     filelist = [osp.join(output_vid_dir, get_video_filename(output_vid_dir, str(row['paper_id']))) for index, row in df.iterrows()]
@@ -434,10 +522,12 @@ def merge(df, session_id, overwrite=False, strict=False):
     n = len(filelist)
     print(filelist, n)
     durations = [get_duration(filename) for filename in filelist]
-    outfile = osp.join(output_vid_dir, f'{session_folder}.mp4').replace('-', '_')
+    outfile = osp.join(output_vid_dir, f'{session_folder}.mp4'.replace('-', '_'))
+    copy2(outfile.replace('.mp4','.png'), merged_video_dir)
 
+    generate_session_img(outfile.replace('.mp4', '.png'), session_name, session_time)
     merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','.srt'))
-
+    merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','_cover.srt'), delay=5)
     if not overwrite and osp.exists(outfile):
         return f'merged video found in {outfile}'
     cmd = ['ffmpeg']
@@ -450,7 +540,10 @@ def merge(df, session_id, overwrite=False, strict=False):
     ]
     try:
         call(cmd)
-        copy2(outfile, osp.join(merged_video_dir, f'{session_folder}.mp4'))
+        add_title_img(outfile)
+        copy2(outfile, merged_video_dir)
+        copy2(outfile.replace('.mp4','_cover.mp4'), merged_video_dir)
+        copy2(outfile.replace('.mp4','.png'), merged_video_dir)
         return f'generate {outfile} successfully'
     except Exception as e:
         # on error, delete the output file
@@ -458,7 +551,7 @@ def merge(df, session_id, overwrite=False, strict=False):
         return f'failed to generate {outfile}'
     
 
-def merge_scripts(files, durations, outfile):
+def merge_scripts(files, durations, outfile, delay=0):
     def time_delay(t1, t2):
         h1, m1, s1, ms1 = t1
         h2, m2, s2, ms2 = t2
@@ -483,8 +576,8 @@ def merge_scripts(files, durations, outfile):
             h2, m2, s2, ms2 = int(res.group(5)), int(res.group(6)), int(res.group(7)), 0
             return f'{time2str(time_delay((h1,m1,s1,ms1), t))} --> {time2str(time_delay((h2,m2,s2,ms2), t))}\n'
         raise Exception('error in sparse time: ', line)
-    accumulate_t = 0
-    t = (0, 0, 0, 0)
+    accumulate_t = delay
+    t = (0, 0, delay, 0)
     counter = 1
     lines = []
     for i, file in enumerate(files):
@@ -551,8 +644,7 @@ if __name__ == '__main__':
         except Exception as e:
             print(input_video_filename)
             raise Exception(e)
-    # print(f"process {cnt} files successfully")
-    # for session_id in sorted(set(clean_df['session_id'])):
-    #     msg = merge(clean_df, session_id)
-    #     print(msg)
-    merge(clean_df, 'full3')
+    print(f"process {cnt} files successfully")
+    for session_id in sorted(set(clean_df['session_id'])):
+        msg = merge(clean_df, session_id)
+        print(msg)

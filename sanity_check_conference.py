@@ -3,11 +3,11 @@ import os.path as osp
 import pandas as pd
 from pathlib import Path
 
-VIDEO_DIR = 'Video and Subtitles by Session'
-CSV_FILE = 'Session Breakdown.xlsx'
-SHEET_NAME = 'LATEST'
+VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
+CSV_FILE = 'Metadata Sheet (ALL COMBINED).xlsx'
+SHEET_NAME = 'Main Conference'
 
-videos = list(glob(VIDEO_DIR + '/*/*.mp4'))
+videos = list(glob(VIDEO_DIR + '/*/v-*.mp4'))
 srts = list(glob(VIDEO_DIR + '/*/*.srt'))
 sbvs = list(glob(VIDEO_DIR + '/*/*.sbv'))
 

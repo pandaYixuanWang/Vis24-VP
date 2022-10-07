@@ -12,12 +12,13 @@ from glob import glob
 from tqdm import tqdm
 from subprocess import call
 from shutil import copy2
+from utils import subtitle_delay, merge_subtitles
 
 IMG_BG_NAME = 'preview-background-2022.png'
-CSV_FILE = 'Session Breakdown.xlsx'
-SHEET_NAME = 'LATEST'
-VIDEO_DIR = 'Video and Subtitles by Session'
-OUTPUT_DIR = 'output'
+VIDEO_DIR = 'Video and Subtitles by Session/POSTERS'
+CSV_FILE = 'Metadata Sheet (ALL COMBINED).xlsx'
+SHEET_NAME = 'Posters'
+OUTPUT_DIR = 'output/POSTERS'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
 merged_video_dir = osp.join(OUTPUT_DIR, 'merged')
 Path(title_img_dir).mkdir(parents=True, exist_ok=True)
@@ -212,6 +213,7 @@ def generate_img(title_data, overwrite=False):
     draw_text( lines, 125, 875, 40 )
 
     final.write_to_png( png_file )
+    copy2(png_file, osp.join(title_img_dir, Path(title_data[5]).stem + '.png'))
 
 
 def generate_video(title_data, overwrite=False):
@@ -271,70 +273,7 @@ def generate_video(title_data, overwrite=False):
         return f'failed to generate {outfile}'
 
 
-def srt_delay(filename, output_filename, seconds=5):
-    
-    def line_delay(line, seconds):
-        # only 25 + 5 seconds so we simplify the logic here
-        if '-->' not in line: return line
-        PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+),(\d+)'
-        res = re.search(PATTERN, line)
-        if res is not None: return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02},{res.group(4)} --> {res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02},{res.group(8)}\n'
-        PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+)'
-        res = re.search(PATTERN, line)
-        if res is not None: return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02},{res.group(4)} --> {res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02},{0}\n'
-        PATTERN = '(\d+):(\d+),(\d+) --> (\d+):(\d+),(\d+)'
-        res = re.search(PATTERN, line)
-        if res is not None: return f'0:{res.group(1)}:{int(res.group(2))+seconds:02},{res.group(3)} --> {0}:{res.group(4)}:{int(res.group(5))+seconds:02},{res.group(6)}\n'
-        raise NotImplementedError('unhandle subtitles', line)
-    if not osp.exists(filename):
-        print("script not found: ", filename)
-        return
 
-    with open(filename, encoding='utf8', errors='replace') as f:
-        lines = f.readlines()
-    lines = [line_delay(line, seconds) for line in lines]
-    with open(output_filename, 'w', encoding='utf8') as f:
-        f.writelines(lines)
-
-
-def sbv_delay(filename, output_filename, seconds=5):
-    def line_delay(line, seconds):
-        # only 25 + 5 seconds so we simplify the logic here
-        PATTERN = '(\d+):(\d+):(\d+).(\d+),(\d+):(\d+):(\d+).(\d+)'
-        res = re.search(PATTERN, line)
-        if res is not None: 
-            return f'{res.group(1)}:{res.group(2)}:{int(res.group(3))+seconds:02},{res.group(4)} --> {res.group(5)}:{res.group(6)}:{int(res.group(7))+seconds:02}.{res.group(8)}\n'
-        if line.count(':') < 2: return line
-        raise NotImplementedError('unhandle subtitles', line)
-        
-    with open(filename, encoding='utf8') as f:
-        lines = f.readlines()
-    lines = [line_delay(line, seconds) for line in lines]
-    COUNTER = 1
-    ret = []
-    for line in lines:
-        if '-->' not in line:
-            ret.append(line)
-        else:
-            ret.append(str(COUNTER)+'\n')
-            ret.append(line)
-            COUNTER += 1
-
-    with open(output_filename.replace('sbv', 'srt'), 'w', encoding='utf8') as f:
-        f.writelines(ret)
-
-
-def subtitle_delay(filename, input_dir, output_dir, overwrite=False):
-    if '.mp4' in filename: filename = filename.replace('.mp4', '')
-    if osp.exists(osp.join(output_dir, filename + '.srt')) and not overwrite: 
-        return
-    if osp.exists(osp.join(input_dir, filename + '.srt')):
-        srt_delay(osp.join(input_dir, filename + '.srt'), osp.join(output_dir, filename + '.srt'))
-    elif osp.exists(osp.join(input_dir, filename + '.sbv')):
-        sbv_delay(osp.join(input_dir, filename + '.sbv'), osp.join(output_dir, filename + '.sbv'))
-    else:
-        print(f'Error: No subtitle is found for {osp.join(input_dir, filename)}')
-        return
     
 
 def check(video_filename):
@@ -344,7 +283,7 @@ def check(video_filename):
 
 
 def get_video_filename(input_dir, filename):
-    result = list(glob(osp.join(input_dir, filename + '*Preview.mp4')))
+    result = list(glob(osp.join(input_dir, filename + '*.mp4')))
     if len(result) == 1: return Path(result[0]).name
     return ''
 
@@ -357,14 +296,7 @@ def get_video_filename(input_dir, filename):
 #     if 'full' in session_id: return 'VIS Full Paper'
 #     raise NotImplementedError('unknown session_id: ', session_id)
 
-def type_convert(paper_id):
-    if 'v-cga' in paper_id: return 'CG&A Paper'
-    if 'v-short' in paper_id: return 'VIS Short Paper'
-    if 'v-siggraph' in paper_id: return 'SIGGRAPH Paper'
-    if 'v-vr' in paper_id: return 'VR Paper'
-    if 'v-full' in paper_id: return 'VIS Full Paper'
-    if 'v-tvcg' in paper_id: return 'TVCG Paper'
-    raise NotImplementedError('unknown paper_id: ', paper_id)
+
 
 
 
@@ -379,30 +311,8 @@ def time_convert(session_time):
     raise NotImplementedError('unknown session_time:', session_time)
 
 
-def date_convert(session_date):
-    DATE_MAP = {
-        'w': 'Wednesday (Oct 19)',
-        't': 'Thursday (Oct 20)',
-        'f': 'Friday (Oct 21)',
-    }
-    if session_date[0] in DATE_MAP: return DATE_MAP[session_date[0]]
-    raise NotImplementedError('unknown session_date:', session_date)
-
-
 def session_folder_convert(session_id, session_name):
-    folder_name = f"{session_id}-{session_name}"
-    if osp.exists(osp.join(VIDEO_DIR, folder_name)): return folder_name
-    if osp.exists(osp.join(VIDEO_DIR, folder_name.replace('/', '-'))): return folder_name.replace('/', '-')
-    if osp.exists(osp.join(VIDEO_DIR, folder_name.replace('/', '~'))): return folder_name.replace('/', '~')
-    folder = glob(osp.join(VIDEO_DIR, session_id+'-*'))
-    if len(folder) == 1:
-        folder = Path(folder[0]).name
-        print('Warning: possibly incorrect folder name:', folder_name, folder)
-        return folder
-    else:
-        print("Error: fail to match folder name: ", folder_name)
-        return ''
-        # raise NotImplementedError('unknown folder_name:', folder_name)
+    return session_name + " Posters"
 
 def get_duration(filename):
     proc = subprocess.Popen( [
@@ -436,8 +346,8 @@ def merge(df, session_id, overwrite=False, strict=False):
     durations = [get_duration(filename) for filename in filelist]
     outfile = osp.join(output_vid_dir, f'{session_folder}.mp4').replace('-', '_')
 
-    merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','.srt'))
-
+    merge_subtitles([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','.srt'))
+    copy2(outfile.replace('.mp4','.srt'), merged_video_dir)
     if not overwrite and osp.exists(outfile):
         return f'merged video found in {outfile}'
     cmd = ['ffmpeg']
@@ -458,54 +368,6 @@ def merge(df, session_id, overwrite=False, strict=False):
         return f'failed to generate {outfile}'
     
 
-def merge_scripts(files, durations, outfile):
-    def time_delay(t1, t2):
-        h1, m1, s1, ms1 = t1
-        h2, m2, s2, ms2 = t2
-        ms = (ms1 + ms2)
-        s = (s1 + s2 + ms // 1000)
-        m = (m1 + m2 + s // 60)
-        h = (h1 + h2 + m // 60)
-        return h, m%60, s%60, ms%1000
-    def time2str(t):
-        return f'{t[0]}:{t[1]:02}:{t[2]:02},{t[3]:03}'
-    def line_delay(line, t):
-        PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+),(\d+)'
-        res = re.search(PATTERN, line)
-        if res is not None:
-            h1, m1, s1, ms1 = int(res.group(1)), int(res.group(2)), int(res.group(3)), int(res.group(4))
-            h2, m2, s2, ms2 = int(res.group(5)), int(res.group(6)), int(res.group(7)), int(res.group(8))
-            return f'{time2str(time_delay((h1,m1,s1,ms1), t))} --> {time2str(time_delay((h2,m2,s2,ms2), t))}\n'
-        PATTERN = '(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+)'
-        res = re.search(PATTERN, line)
-        if res is not None:
-            h1, m1, s1, ms1 = int(res.group(1)), int(res.group(2)), int(res.group(3)), int(res.group(4))
-            h2, m2, s2, ms2 = int(res.group(5)), int(res.group(6)), int(res.group(7)), 0
-            return f'{time2str(time_delay((h1,m1,s1,ms1), t))} --> {time2str(time_delay((h2,m2,s2,ms2), t))}\n'
-        raise Exception('error in sparse time: ', line)
-    accumulate_t = 0
-    t = (0, 0, 0, 0)
-    counter = 1
-    lines = []
-    for i, file in enumerate(files):
-        if osp.exists(file):
-            with open(file, encoding='utf8') as f:
-                for line in f.readlines():
-                    if len(line.strip()) < 3 and line.strip().isdigit():
-                        lines.append(f'{counter}\n')
-                        counter += 1
-                    elif '-->' in line:
-                        lines.append(line_delay(line, t))
-                    else:
-                        lines.append(line)
-            lines.append('\n')
-        accumulate_t += durations[i]
-        t = (int(accumulate_t//3600), int(accumulate_t//60) % 60, int(accumulate_t) % 60, int(1000*accumulate_t) % 1000)
-    
-        
-    with open(outfile, 'w', encoding='utf8') as f:
-        f.writelines(lines)
-    copy2(outfile, merged_video_dir)
 
 
 
@@ -519,8 +381,6 @@ if __name__ == '__main__':
     n_total = clean_df.shape[0]
     print(n_total)
     for index, (_, row) in enumerate(clean_df.iterrows()):
-        if not pd.isna(row['session']): session_time = time_convert(row['session'])
-        if not pd.isna(row['session']): session_date = date_convert(row['session'])
         session_folder = session_folder_convert(row['session_id'], row['session_name'])
         if session_folder == '':
             print(f'[{index}/{n_total}]', f'Error: could not find folder {session_folder}')
@@ -534,13 +394,13 @@ if __name__ == '__main__':
         if video_filename == '' or not check(input_video_filename):
             print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
             continue
-        video_metadata = [type_convert(row['paper_id']),
+        video_metadata = [session_folder,
                         row['title'],
                         row['authors'],
                         input_video_filename,
-                        row['session_name'] + '\\n' + session_time + ', ' + session_date,
+                        '',
                         output_video_filename,
-                        row['award']
+                        ''
                         ]
         try:
             generate_img(video_metadata)
@@ -551,8 +411,7 @@ if __name__ == '__main__':
         except Exception as e:
             print(input_video_filename)
             raise Exception(e)
-    # print(f"process {cnt} files successfully")
-    # for session_id in sorted(set(clean_df['session_id'])):
-    #     msg = merge(clean_df, session_id)
-    #     print(msg)
-    merge(clean_df, 'full3')
+    print(f"process {cnt} files successfully")
+    for session_id in sorted(set(clean_df['session_id'])):
+        msg = merge(clean_df, session_id)
+        print(msg)

@@ -14,10 +14,10 @@ from subprocess import call
 from shutil import copy2
 
 IMG_BG_NAME = 'preview-background-2022.png'
-CSV_FILE = 'Session Breakdown.xlsx'
-SHEET_NAME = 'LATEST'
-VIDEO_DIR = 'Video and Subtitles by Session'
-OUTPUT_DIR = 'output'
+VIDEO_DIR = 'Video and Subtitles by Session/ASSOCIATED EVENTS'
+CSV_FILE = 'Metadata Sheet (ALL COMBINED).xlsx'
+SHEET_NAME = 'Associated Events'
+OUTPUT_DIR = 'output/ASSOCIATED EVENTS'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
 merged_video_dir = osp.join(OUTPUT_DIR, 'merged')
 Path(title_img_dir).mkdir(parents=True, exist_ok=True)
@@ -71,6 +71,7 @@ def generate_img(title_data, overwrite=False):
 
     # png_file = osp.join(title_img_dir, Path(title_data[3]).stem + '.png')
     png_file = osp.join(Path(title_data[5]).parent, Path(title_data[5]).stem + '.png')
+    print(png_file)
 
     if osp.exists(png_file) and not overwrite:
         return
@@ -212,6 +213,11 @@ def generate_img(title_data, overwrite=False):
     draw_text( lines, 125, 875, 40 )
 
     final.write_to_png( png_file )
+    if not osp.exists(png_file):
+        filename = list(glob(osp.join(Path(title_data[5]).parent, Path(title_data[5]).stem.split('_')[0] + '*.png')))[0]
+        copy2(filename, png_file)
+        os.remove(filename)
+    copy2(png_file, osp.join(title_img_dir, Path(title_data[5]).stem + '.png'))
 
 
 def generate_video(title_data, overwrite=False):
@@ -367,42 +373,8 @@ def type_convert(paper_id):
     raise NotImplementedError('unknown paper_id: ', paper_id)
 
 
-
-def time_convert(session_time):
-    TIME_MAP = {
-        '1': '09:00-10:15',
-        '2': '10:45-12:00',
-        '3': '14:00-15:15',
-        '4': '15:45-17:00',
-    }
-    if session_time[-1] in TIME_MAP: return TIME_MAP[session_time[-1]]
-    raise NotImplementedError('unknown session_time:', session_time)
-
-
-def date_convert(session_date):
-    DATE_MAP = {
-        'w': 'Wednesday (Oct 19)',
-        't': 'Thursday (Oct 20)',
-        'f': 'Friday (Oct 21)',
-    }
-    if session_date[0] in DATE_MAP: return DATE_MAP[session_date[0]]
-    raise NotImplementedError('unknown session_date:', session_date)
-
-
 def session_folder_convert(session_id, session_name):
-    folder_name = f"{session_id}-{session_name}"
-    if osp.exists(osp.join(VIDEO_DIR, folder_name)): return folder_name
-    if osp.exists(osp.join(VIDEO_DIR, folder_name.replace('/', '-'))): return folder_name.replace('/', '-')
-    if osp.exists(osp.join(VIDEO_DIR, folder_name.replace('/', '~'))): return folder_name.replace('/', '~')
-    folder = glob(osp.join(VIDEO_DIR, session_id+'-*'))
-    if len(folder) == 1:
-        folder = Path(folder[0]).name
-        print('Warning: possibly incorrect folder name:', folder_name, folder)
-        return folder
-    else:
-        print("Error: fail to match folder name: ", folder_name)
-        return ''
-        # raise NotImplementedError('unknown folder_name:', folder_name)
+    return session_name
 
 def get_duration(filename):
     proc = subprocess.Popen( [
@@ -519,8 +491,7 @@ if __name__ == '__main__':
     n_total = clean_df.shape[0]
     print(n_total)
     for index, (_, row) in enumerate(clean_df.iterrows()):
-        if not pd.isna(row['session']): session_time = time_convert(row['session'])
-        if not pd.isna(row['session']): session_date = date_convert(row['session'])
+        session_time = row['session']
         session_folder = session_folder_convert(row['session_id'], row['session_name'])
         if session_folder == '':
             print(f'[{index}/{n_total}]', f'Error: could not find folder {session_folder}')
@@ -534,16 +505,16 @@ if __name__ == '__main__':
         if video_filename == '' or not check(input_video_filename):
             print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
             continue
-        video_metadata = [type_convert(row['paper_id']),
+        video_metadata = [row['session_name'] + ' ' + row['content_type'],
                         row['title'],
                         row['authors'],
                         input_video_filename,
-                        row['session_name'] + '\\n' + session_time + ', ' + session_date,
+                        row['session_full_name'] + '\\n' + session_time,
                         output_video_filename,
-                        row['award']
+                        ''
                         ]
         try:
-            generate_img(video_metadata)
+            # generate_img(video_metadata)
             msg = generate_video(video_metadata)
             subtitle_delay(video_filename, input_vid_dir, output_vid_dir)
             print(f'[{index}/{n_total}]', msg)
@@ -551,8 +522,7 @@ if __name__ == '__main__':
         except Exception as e:
             print(input_video_filename)
             raise Exception(e)
-    # print(f"process {cnt} files successfully")
-    # for session_id in sorted(set(clean_df['session_id'])):
-    #     msg = merge(clean_df, session_id)
-    #     print(msg)
-    merge(clean_df, 'full3')
+    print(f"process {cnt} files successfully")
+    for session_id in sorted(set(clean_df['session_id'])):
+        msg = merge(clean_df, session_id)
+        print(msg)
