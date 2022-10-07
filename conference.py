@@ -523,8 +523,6 @@ def merge(df, session_id, overwrite=False, strict=False):
     print(filelist, n)
     durations = [get_duration(filename) for filename in filelist]
     outfile = osp.join(output_vid_dir, f'{session_folder}.mp4'.replace('-', '_'))
-    copy2(outfile.replace('.mp4','.png'), merged_video_dir)
-
     generate_session_img(outfile.replace('.mp4', '.png'), session_name, session_time)
     merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','.srt'))
     merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','_cover.srt'), delay=5)

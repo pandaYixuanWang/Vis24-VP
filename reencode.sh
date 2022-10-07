@@ -14,6 +14,9 @@ ffmpeg -i "Video and Subtitles by Session\MAIN CONFERENCE\full28-DNA~Genome and 
 cp "Video and Subtitles by Session\ASSOCIATED EVENTS\Vis4Good\w-vis4good-2457_Hattab_Preview.mp4" "Video and Subtitles by Session\ASSOCIATED EVENTS\Vis4Good\origin-w-vis4good-2457_Hattab_Preview.mp4"
 ffmpeg -i "Video and Subtitles by Session\ASSOCIATED EVENTS\Vis4Good\origin-w-vis4good-2457_Hattab_Preview.mp4" -vf "scale='trunc(ih*dar):ih',setsar=1/1,pad='1920:1080:(ow-iw)/2:(oh-ih)/2:white'" -acodec copy "Video and Subtitles by Session\ASSOCIATED EVENTS\Vis4Good\w-vis4good-2457_Hattab_Preview.mp4"
 
+cp "Video and Subtitles by Session\MAIN CONFERENCE\full13-Reflecting on Academia and our Field\v-tvcg-9747941_Guo_Preview.mp4" "Video and Subtitles by Session\MAIN CONFERENCE\full13-Reflecting on Academia and our Field\origin-v-tvcg-9747941_Guo_Preview.mp4"
+ffmpeg -i "Video and Subtitles by Session\MAIN CONFERENCE\full13-Reflecting on Academia and our Field\origin-v-tvcg-9747941_Guo_Preview.mp4" -vf "scale='-2:1080',setsar=1/1,pad='1920:1080:(ow-iw)/2:(oh-ih)/2:white'" -acodec copy "Video and Subtitles by Session\MAIN CONFERENCE\full13-Reflecting on Academia and our Field\v-tvcg-9747941_Guo_Preview.mp4"
+
 
 mv "Video and Subtitles by Session/ASSOCIATED EVENTS\TopoInVis\w-topoinvis-1005_wetzels_preview.srt" "Video and Subtitles by Session/ASSOCIATED EVENTS\TopoInVis\w-topoinvis-1005_Wetzels_Preview.srt"
 mv "Video and Subtitles by Session/MAIN CONFERENCE\full23-Topology\v-full-1051_Kopee_Preview.sbv" "Video and Subtitles by Session/MAIN CONFERENCE\full23-Topology\v-full-1051_Koepp_Preview.sbv"
