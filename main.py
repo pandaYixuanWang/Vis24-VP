@@ -32,6 +32,7 @@ def probe( filename ):
             '-print_format', 'json',
             '-i', filename
         ],
+        shell = True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE )
 
@@ -345,7 +346,8 @@ def check(video_filename):
 
 def get_video_filename(input_dir, filename):
     result = list(glob(osp.join(input_dir, filename + '*Preview.mp4')))
-    if len(result) == 1: return Path(result[0]).name
+    if len(result) == 1: 
+        return Path(result[0]).name
     return ''
 
 
@@ -511,7 +513,8 @@ def merge_scripts(files, durations, outfile):
 
 
 if __name__ == '__main__':
-    df = pd.read_excel(open(CSV_FILE, 'rb'),sheet_name=SHEET_NAME, engine='openpyxl')
+    # df = pd.read_excel(open(CSV_FILE, 'rb'),sheet_name=SHEET_NAME, engine='openpyxl') # maybe we don't need openpyxl anymore with pd
+    df = pd.read_excel(open(CSV_FILE, 'rb'),sheet_name=SHEET_NAME)
     cnt = 0
     clean_df = df.loc[df['paper_id'].notna()]
     session_time = None
@@ -519,8 +522,10 @@ if __name__ == '__main__':
     n_total = clean_df.shape[0]
     print(n_total)
     for index, (_, row) in enumerate(clean_df.iterrows()):
-        if not pd.isna(row['session']): session_time = time_convert(row['session'])
-        if not pd.isna(row['session']): session_date = date_convert(row['session'])
+        if not pd.isna(row['session']):
+                session_time = time_convert(row['session'])
+        if not pd.isna(row['session']):
+                session_date = date_convert(row['session'])
         session_folder = session_folder_convert(row['session_id'], row['session_name'])
         if session_folder == '':
             print(f'[{index}/{n_total}]', f'Error: could not find folder {session_folder}')
