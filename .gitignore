@@ -1,6 +1,6 @@
-video_dir/
+Video and Subtitles by Session/*
+video_dir/*
 tmp.png
-output/
+output/*
 __pycache__
 VisVS23-env/
-*.DS_Store
