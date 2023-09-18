@@ -13,7 +13,7 @@ from tqdm import tqdm
 from subprocess import call
 from shutil import copy2
 
-IMG_BG_NAME = 'preview-background-2022.png'
+IMG_BG_NAME = 'preview-background-2023.png'
 VIDEO_DIR = 'Video and Subtitles by Session/ASSOCIATED EVENTS'
 CSV_FILE = 'Metadata Sheet (ALL COMBINED).xlsx'
 SHEET_NAME = 'Associated Events'

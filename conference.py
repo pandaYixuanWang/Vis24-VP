@@ -14,7 +14,7 @@ from subprocess import call
 from shutil import copy2
 from utils import add_title_img
 
-IMG_BG_NAME = 'preview-background-2022.png'
+IMG_BG_NAME = 'preview-background-2023.png'
 VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
 CSV_FILE = 'metadata-file.xlsx'
 SHEET_NAME = 'metadata-file'
