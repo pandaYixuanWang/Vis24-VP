@@ -14,8 +14,8 @@ from subprocess import call
 from shutil import copy2
 
 IMG_BG_NAME = 'preview-background-2022.png'
-CSV_FILE = 'Session Breakdown.xlsx'
-SHEET_NAME = 'LATEST'
+CSV_FILE = 'metadata-file.xlsx'
+SHEET_NAME = 'metadata-file'
 VIDEO_DIR = 'Video and Subtitles by Session'
 OUTPUT_DIR = 'output'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
@@ -383,9 +383,9 @@ def time_convert(session_time):
 
 def date_convert(session_date):
     DATE_MAP = {
-        'w': 'Wednesday (Oct 19)',
-        't': 'Thursday (Oct 20)',
-        'f': 'Friday (Oct 21)',
+        'w': 'Wednesday (Oct 25)',
+        't': 'Thursday (Oct 26)',
+        'f': 'Friday (Oct 27)',
     }
     if session_date[0] in DATE_MAP: return DATE_MAP[session_date[0]]
     raise NotImplementedError('unknown session_date:', session_date)

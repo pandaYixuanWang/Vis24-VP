@@ -16,8 +16,8 @@ from utils import add_title_img
 
 IMG_BG_NAME = 'preview-background-2022.png'
 VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
-CSV_FILE = 'Metadata Sheet (ALL COMBINED).xlsx'
-SHEET_NAME = 'Main Conference'
+CSV_FILE = 'metadata-file.xlsx'
+SHEET_NAME = 'metadata-file'
 OUTPUT_DIR = 'output/MAIN CONFERENCE'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
 merged_video_dir = osp.join(OUTPUT_DIR, 'merged')
@@ -468,10 +468,10 @@ def time_convert(session_time):
 
 def date_convert(session_date):
     DATE_MAP = {
-        'tue': 'Tuesday (Oct 18)',
-        'wed': 'Wednesday (Oct 19)',
-        'thu': 'Thursday (Oct 20)',
-        'fri': 'Friday (Oct 21)',
+        'tue': 'Tuesday (Oct 24)',
+        'wed': 'Wednesday (Oct 25)',
+        'thu': 'Thursday (Oct 26)',
+        'fri': 'Friday (Oct 27)',
     }
     if session_date[0:3] in DATE_MAP: return DATE_MAP[session_date[0:3]]
     raise NotImplementedError('unknown session_date:', session_date)
