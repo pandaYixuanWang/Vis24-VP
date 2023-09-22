@@ -141,12 +141,13 @@ def generate_img(title_data, overwrite=False):
 
         # Background Colour:
         # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Background
-        ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
+        # ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
+        ctx.set_source_rgba(0.992, 0.7294, 0.192, 1 ) # Gold background - 2023
         ctx.fill()
         
         ctx.select_font_face( "Tahoma" )
         # Text Colour:
-        ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 ) # Gold Text
+        ctx.set_source_rgba( 0.31, 0.212, 0, 1 ) # dark brown Text
         # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Text
         # ctx.set_source_rgba( 0.945, 0.341, 0.133, 1 ) # Orange Text
         
