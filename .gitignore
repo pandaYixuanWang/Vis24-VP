@@ -4,3 +4,4 @@ tmp.png
 output/*
 __pycache__
 VisVS23-env/
+.DS_Store

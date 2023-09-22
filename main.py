@@ -14,9 +14,9 @@ from subprocess import call
 from shutil import copy2
 
 IMG_BG_NAME = 'preview-background-2023.png'
-CSV_FILE = 'metadata-file.xlsx'
+CSV_FILE = 'metadata-file-2023-testing.xlsx'
 SHEET_NAME = 'metadata-file'
-VIDEO_DIR = 'Video and Subtitles by Session'
+VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
 OUTPUT_DIR = 'output'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
 merged_video_dir = osp.join(OUTPUT_DIR, 'merged')
@@ -32,7 +32,7 @@ def probe( filename ):
             '-print_format', 'json',
             '-i', filename
         ],
-        shell = True,
+        shell = False, # ! change it to be false such that ensuring shell is not involved in executing 
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE )
 
@@ -41,7 +41,7 @@ def probe( filename ):
         return None
 
     raw_info = yaml.load(out, Loader=yaml.FullLoader)
-
+    
     info          = dict()                
     info['video'] = dict()
     info['audio'] = dict()
@@ -167,7 +167,9 @@ def generate_img(title_data, overwrite=False):
         
     # draw title
     ctx.select_font_face( "Tahoma" )
-    ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
+    # ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 ) # dark red - 2022
+    ctx.set_source_rgba( 0.549, 0.22, 0, 1 ) # yellow - 2023
+
 
     for fontsize in range( 60, 50, -2 ):
 
@@ -185,7 +187,9 @@ def generate_img(title_data, overwrite=False):
 
     # draw authors
     ctx.select_font_face( "Tahoma" )
-    ctx.set_source_rgba( 0.114, 0.192, 0.376, 1)
+    # ctx.set_source_rgba( 0.114, 0.192, 0.376, 1) #dark blue - 2022
+    # ctx.set_source_rgba( 0.11, 0.329, 0.659, 1) # lighter blue - 2023 option 1
+    ctx.set_source_rgba( 0.769, 0.439, 0, 1)
 
     for author_fontsize in range( 50, 40, -2 ):
 
@@ -236,7 +240,7 @@ def generate_video(title_data, overwrite=False):
     filter  = '[0:v]trim=duration=5,fade=t=out:st=4.5:d=0.5[v0];'
     filter += 'aevalsrc=0:d=5[a0];'
     filter += '[1:v]scale=w=1920:h=1080[v1];'
-
+    
     if info['audio']['codec'] == '-':
         filter += 'aevalsrc=0:d=25[a1];'
     else:
@@ -434,15 +438,17 @@ def merge(df, session_id, overwrite=False, strict=False):
         else: print(f'Some videos are missing in {session_folder} : {",".join(paper_ids)}. Still generating though.')
     filelist = [filename for filename in filelist if '.mp4' in filename]
     n = len(filelist)
-    print(filelist, n)
     durations = [get_duration(filename) for filename in filelist]
-    outfile = osp.join(output_vid_dir, f'{session_folder}.mp4').replace('-', '_')
-
+    # outfile = osp.join(output_vid_dir, f'{session_folder}.mp4').replace('-', '_') # ! not sure why the folder name need to be changed so commented .replace('-', '_')
+    outfile = osp.join(output_vid_dir, f'{session_folder}.mp4')
+    
     merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','.srt'))
 
     if not overwrite and osp.exists(outfile):
         return f'merged video found in {outfile}'
     cmd = ['ffmpeg']
+    cmd.append('-loglevel') # ! only print error messages
+    cmd.append('error') # ! only print error messages
     for filename in filelist: cmd.append('-i'); cmd.append(filename)
     cmd = cmd + [
         '-filter_complex', ''.join([f'[{i}:v] [{i}:a] ' for i in range(n)]) + f'concat=n={n}:v=1:a=1 [v] [a]',
@@ -493,9 +499,10 @@ def merge_scripts(files, durations, outfile):
         if osp.exists(file):
             with open(file, encoding='utf8') as f:
                 for line in f.readlines():
-                    if len(line.strip()) < 3 and line.strip().isdigit():
+                    # if len(line.strip()) < 3 and line.strip().isdigit(): # ! will return false in particular cases even though it should return true, but somehow there might be non-breaking spaces/other unicode
+                    if len(line.strip()) < 3 and bool(re.match(r'^\D*\d+\D*$', line)):
                         lines.append(f'{counter}\n')
-                        counter += 1
+                        counter += 1 
                     elif '-->' in line:
                         lines.append(line_delay(line, t))
                     else:
@@ -504,12 +511,36 @@ def merge_scripts(files, durations, outfile):
         accumulate_t += durations[i]
         t = (int(accumulate_t//3600), int(accumulate_t//60) % 60, int(accumulate_t) % 60, int(1000*accumulate_t) % 1000)
     
-        
     with open(outfile, 'w', encoding='utf8') as f:
-        f.writelines(lines)
+        f.writelines(refine_subtitle_format(lines, counter-1))
+        # f.writelines(lines)
+
     copy2(outfile, merged_video_dir)
 
 
+def refine_subtitle_format(lines, finalCount):
+    """
+    Process a list of subtitle lines to ensure only one line break between subtitle blocks.
+    and remove some noticable irrelevant characters
+    Args:
+    - lines (list of str): The input list of subtitle lines.
+    Returns:
+    - list of str: The processed list of subtitle lines.
+    """
+    lines_str =  ''.join(lines)
+    
+    pattern = re.compile(r"(\d+)\n(\d{1,2}:\d{2}:\d{2},\d{3} --> \d{1,2}:\d{2}:\d{2},\d{3})\n(.*?)(?=\n\d|\Z)", re.DOTALL)
+    matches = pattern.findall(lines_str)
+    if len(matches) != finalCount:
+        print("Warning: some blocks may not be in the right format", len(matches), finalCount)
+        return lines
+    adapted_lines = '\n\n'.join('\n'.join(match) for match in matches)
+    
+    # ! remove the pattern like <font color="#ffffff"> </font>
+    pattern = re.compile(r'<font color="#[0-9a-fA-F]{6}">|</font>')
+    adapted_lines = pattern.sub('', adapted_lines)
+    
+    return [adapted_lines]
 
 
 if __name__ == '__main__':
@@ -520,8 +551,8 @@ if __name__ == '__main__':
     session_time = None
     session_date = None
     n_total = clean_df.shape[0]
-    print(n_total)
-    for index, (_, row) in enumerate(clean_df.iterrows()):
+    print("n_total: ", n_total)
+    for index, (_, row) in enumerate(tqdm(clean_df.iterrows(), total=n_total, desc="Processing videos")): # add tqdm to show the current status
         if not pd.isna(row['session']):
                 session_time = time_convert(row['session'])
         if not pd.isna(row['session']):
@@ -534,7 +565,10 @@ if __name__ == '__main__':
         output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
         Path(output_vid_dir).mkdir(parents=True, exist_ok=True)
         video_filename = get_video_filename(input_vid_dir, row['paper_id'])
-        input_video_filename = osp.join(input_vid_dir, video_filename)
+        input_video_filename = osp.join(input_vid_dir, video_filename)  
+        
+        print(f"Processing file: {input_video_filename}")
+            
         output_video_filename = osp.join(output_vid_dir, video_filename)
         if video_filename == '' or not check(input_video_filename):
             print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
@@ -556,8 +590,8 @@ if __name__ == '__main__':
         except Exception as e:
             print(input_video_filename)
             raise Exception(e)
-    # print(f"process {cnt} files successfully")
-    # for session_id in sorted(set(clean_df['session_id'])):
-    #     msg = merge(clean_df, session_id)
-    #     print(msg)
-    merge(clean_df, 'full3')
+    print(f"process {cnt} files successfully")
+    for session_id in sorted(set(clean_df['session_id'])):
+        msg = merge(clean_df, session_id)
+        print(msg)
+    # merge(clean_df, 'full3')
