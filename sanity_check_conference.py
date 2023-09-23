@@ -4,8 +4,8 @@ import pandas as pd
 from pathlib import Path
 
 VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
-CSV_FILE = 'Metadata Sheet (ALL COMBINED).xlsx'
-SHEET_NAME = 'Main Conference'
+CSV_FILE = 'metadata-file-2023.xlsx'
+SHEET_NAME = 'metadata-file'
 
 videos = list(glob(VIDEO_DIR + '/*/v-*.mp4'))
 srts = list(glob(VIDEO_DIR + '/*/*.srt'))

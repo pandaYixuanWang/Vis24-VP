@@ -16,7 +16,7 @@ from utils import add_title_img
 
 IMG_BG_NAME = 'preview-background-2023.png'
 VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
-CSV_FILE = 'metadata-file.xlsx'
+CSV_FILE = 'metadata-file-2023.xlsx'
 SHEET_NAME = 'metadata-file'
 OUTPUT_DIR = 'output/MAIN CONFERENCE'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
@@ -33,6 +33,7 @@ def probe( filename ):
             '-print_format', 'json',
             '-i', filename
         ],
+        shell = False, # ! change it to be false such that ensuring shell is not involved in executing 
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE )
 
@@ -141,12 +142,14 @@ def generate_img(title_data, overwrite=False):
 
         # Background Colour:
         # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Background
-        ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
+        # ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
+        ctx.set_source_rgba(0.992, 0.7294, 0.192, 1 ) # Gold background - 2023
         ctx.fill()
         
         ctx.select_font_face( "Tahoma" )
         # Text Colour:
-        ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 ) # Gold Text
+        ctx.set_source_rgba( 0.31, 0.212, 0, 1 ) # dark brown Text
+        # ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 ) # Gold Text
         # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Text
         # ctx.set_source_rgba( 0.945, 0.341, 0.133, 1 ) # Orange Text
         
@@ -167,7 +170,8 @@ def generate_img(title_data, overwrite=False):
         
     # draw title
     ctx.select_font_face( "Tahoma" )
-    ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
+    # ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
+    ctx.set_source_rgba( 0.549, 0.22, 0, 1 ) # yellow - 2023
 
     for fontsize in range( 60, 50, -2 ):
 
@@ -185,8 +189,9 @@ def generate_img(title_data, overwrite=False):
 
     # draw authors
     ctx.select_font_face( "Tahoma" )
-    ctx.set_source_rgba( 0.114, 0.192, 0.376, 1)
-
+    # ctx.set_source_rgba( 0.114, 0.192, 0.376, 1)
+    ctx.set_source_rgba( 0.769, 0.439, 0, 1)
+    
     for author_fontsize in range( 50, 40, -2 ):
 
         ctx.set_font_size( author_fontsize )
@@ -321,8 +326,9 @@ def generate_video(title_data, overwrite=False):
     info = probe( input_file )
     filter  = '[0:v]trim=duration=5,fade=t=out:st=4.5:d=0.5[v0];'
     filter += 'aevalsrc=0:d=5[a0];'
-    filter += '[1:v]scale=w=1920:h=1080[v1];'
-
+    # filter += '[1:v]scale=w=1920:h=1080[v1];'
+    filter += '[1:v]scale=w=1920:h=1080,setsar=1:1[v1];'  # ! add setsar=1:1 here to resolve error that SAR 81:256 does not match  SAR 1:1
+    
     if info['audio']['codec'] == '-':
         filter += 'aevalsrc=0:d=25[a1];'
     else:
@@ -386,6 +392,7 @@ def srt_delay(filename, output_filename, seconds=5):
 
 def sbv_delay(filename, output_filename, seconds=5):
     def line_delay(line, seconds):
+        line = line.replace(', ', ',') # ! resolve error that '0:00:24.419, 0:00:26.0\n' has a space in ", "
         # only 25 + 5 seconds so we simplify the logic here
         PATTERN = '(\d+):(\d+):(\d+).(\d+),(\d+):(\d+):(\d+).(\d+)'
         res = re.search(PATTERN, line)
@@ -451,6 +458,8 @@ def type_convert(paper_id):
     if 'v-vr' in paper_id: return 'VR Paper'
     if 'v-full' in paper_id: return 'VIS Full Paper'
     if 'v-tvcg' in paper_id: return 'TVCG Paper'
+    if 'v-ismar' in paper_id: return 'ISMAR Paper'
+    if 'v-vr' in paper_id: return 'VR Paper'
     raise NotImplementedError('unknown paper_id: ', paper_id)
 
 
@@ -468,6 +477,7 @@ def time_convert(session_time):
 
 def date_convert(session_date):
     DATE_MAP = {
+        'mon': 'Monday (Oct 23)',
         'tue': 'Tuesday (Oct 24)',
         'wed': 'Wednesday (Oct 25)',
         'thu': 'Thursday (Oct 26)',
@@ -482,6 +492,8 @@ def session_folder_convert(session_id, session_name):
     if osp.exists(osp.join(VIDEO_DIR, folder_name)): return folder_name
     if osp.exists(osp.join(VIDEO_DIR, folder_name.replace('/', '-'))): return folder_name.replace('/', '-')
     if osp.exists(osp.join(VIDEO_DIR, folder_name.replace('/', '~'))): return folder_name.replace('/', '~')
+    if osp.exists(osp.join(VIDEO_DIR, folder_name.replace('&', '_'))): return folder_name.replace('&', '_') # ! replace e.g. "Dashboards & Multiple Views" to "Dashboards _ Multiple Views"
+
     folder = glob(osp.join(VIDEO_DIR, session_id+'-*'))
     if len(folder) == 1:
         folder = Path(folder[0]).name
@@ -522,13 +534,18 @@ def merge(df, session_id, overwrite=False, strict=False):
     n = len(filelist)
     print(filelist, n)
     durations = [get_duration(filename) for filename in filelist]
-    outfile = osp.join(output_vid_dir, f'{session_folder}.mp4'.replace('-', '_'))
+    # outfile = osp.join(output_vid_dir, f'{session_folder}.mp4'.replace('-', '_'))
+    outfile = osp.join(output_vid_dir, f'{session_folder}.mp4').replace('&', '_')
+    
     generate_session_img(outfile.replace('.mp4', '.png'), session_name, session_time)
     merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','.srt'))
     merge_scripts([filename.replace('.mp4', '.srt') for filename in filelist], durations, outfile.replace('.mp4','_cover.srt'), delay=5)
     if not overwrite and osp.exists(outfile):
         return f'merged video found in {outfile}'
     cmd = ['ffmpeg']
+    cmd.append('-loglevel') # ! only print error messages
+    cmd.append('error') # ! only print error messages
+    
     for filename in filelist: cmd.append('-i'); cmd.append(filename)
     cmd = cmd + [
         '-filter_complex', ''.join([f'[{i}:v] [{i}:a] ' for i in range(n)]) + f'concat=n={n}:v=1:a=1 [v] [a]',
@@ -582,7 +599,8 @@ def merge_scripts(files, durations, outfile, delay=0):
         if osp.exists(file):
             with open(file, encoding='utf8') as f:
                 for line in f.readlines():
-                    if len(line.strip()) < 3 and line.strip().isdigit():
+                    # if len(line.strip()) < 3 and line.strip().isdigit():
+                    if len(line.strip()) < 3 and bool(re.match(r'^\D*\d+\D*$', line)):
                         lines.append(f'{counter}\n')
                         counter += 1
                     elif '-->' in line:
@@ -595,10 +613,35 @@ def merge_scripts(files, durations, outfile, delay=0):
     
         
     with open(outfile, 'w', encoding='utf8') as f:
-        f.writelines(lines)
+        f.writelines(refine_subtitle_format(lines, counter-1))
+        # f.writelines(lines)
     copy2(outfile, merged_video_dir)
 
 
+def refine_subtitle_format(lines, finalCount):
+    """
+    Process a list of subtitle lines to ensure only one line break between subtitle blocks.
+    and remove some noticeable irrelevant characters
+    Args:
+    - lines (list of str): The input list of subtitle lines.
+    - finalCount (int): The number of subtitle blocks.
+    Returns:
+    - list of str: The processed list of subtitle lines.
+    """
+    lines_str =  ''.join(lines)
+    
+    pattern = re.compile(r"(\d+)\n(\d{1,2}:\d{2}:\d{2},\d{3} --> \d{1,2}:\d{2}:\d{2},\d{3})\n(.*?)(?=\n\d|\Z)", re.DOTALL)
+    matches = pattern.findall(lines_str)
+    if len(matches) != finalCount:
+        print("Warning: some subtitle blocks may not be in the right format to be recognized by regex above", len(matches), finalCount)
+        return lines
+    adapted_lines = '\n\n'.join('\n'.join(match) for match in matches)
+    
+    # ! remove the pattern like <font color="#ffffff"> </font>
+    pattern = re.compile(r'<font color="#[0-9a-fA-F]{6}">|</font>')
+    adapted_lines = pattern.sub('', adapted_lines)
+    
+    return [adapted_lines]
 
 
 if __name__ == '__main__':
@@ -609,7 +652,7 @@ if __name__ == '__main__':
     session_date = None
     n_total = clean_df.shape[0]
     print(n_total)
-    for index, (_, row) in enumerate(clean_df.iterrows()):
+    for index, (_, row) in enumerate(tqdm(clean_df.iterrows(), total=n_total, desc="Processing videos")): # add tqdm to show the current status
         if not pd.isna(row['session']): session_time = time_convert(row['session'])
         if not pd.isna(row['session']): session_date = date_convert(row['session'])
         session_folder = session_folder_convert(row['session_id'], row['session_name'])
@@ -621,6 +664,9 @@ if __name__ == '__main__':
         Path(output_vid_dir).mkdir(parents=True, exist_ok=True)
         video_filename = get_video_filename(input_vid_dir, row['paper_id'])
         input_video_filename = osp.join(input_vid_dir, video_filename)
+        
+        print(f"⏩Processing file: {input_video_filename}")
+
         output_video_filename = osp.join(output_vid_dir, video_filename)
         if video_filename == '' or not check(input_video_filename):
             print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
