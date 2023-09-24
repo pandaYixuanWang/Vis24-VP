@@ -14,9 +14,9 @@ from subprocess import call
 from shutil import copy2
 from utils import add_title_img
 
+CSV_FILE = 'metadata-file-2023-testing.xlsx'
 IMG_BG_NAME = 'preview-background-2023.png'
 VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
-CSV_FILE = 'metadata-file-2023.xlsx'
 SHEET_NAME = 'metadata-file'
 OUTPUT_DIR = 'output/MAIN CONFERENCE'
 title_img_dir = osp.join(OUTPUT_DIR, 'title_img')
@@ -273,7 +273,8 @@ def generate_session_img(png_file, session_name, session_time, overwrite=False):
 
     # draw title
     ctx.select_font_face( "Tahoma Bold" )
-    ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
+    # ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
+    ctx.set_source_rgba( 0.549, 0.22, 0, 1 ) # yellow - 2023
 
     for fontsize in range( 60, 50, -2 ):
 
@@ -291,7 +292,8 @@ def generate_session_img(png_file, session_name, session_time, overwrite=False):
 
     # draw authors
     ctx.select_font_face( "Tahoma" )
-    ctx.set_source_rgba( 0.114, 0.192, 0.376, 1)
+    # ctx.set_source_rgba( 0.114, 0.192, 0.376, 1)
+    ctx.set_source_rgba( 0.769, 0.439, 0, 1)
 
     for author_fontsize in range( 50, 40, -2 ):
 
@@ -665,7 +667,7 @@ if __name__ == '__main__':
         video_filename = get_video_filename(input_vid_dir, row['paper_id'])
         input_video_filename = osp.join(input_vid_dir, video_filename)
         
-        print(f"⏩Processing file: {input_video_filename}")
+        print(f"👉Processing file: {input_video_filename}")
 
         output_video_filename = osp.join(output_vid_dir, video_filename)
         if video_filename == '' or not check(input_video_filename):
@@ -688,7 +690,10 @@ if __name__ == '__main__':
         except Exception as e:
             print(input_video_filename)
             raise Exception(e)
+        
+        
     print(f"process {cnt} files successfully")
     for session_id in sorted(set(clean_df['session_id'])):
         msg = merge(clean_df, session_id)
+        print(clean_df, session_id)
         print(msg)
