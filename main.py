@@ -15,7 +15,7 @@ from shutil import copy2
 
 
 IMG_BG_NAME = 'preview-background-2023.png'
-CSV_FILE = 'metadata-file-2023-testing.xlsx'
+CSV_FILE = 'metadata-file-2023.xlsx'
 SHEET_NAME = 'metadata-file'
 VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
 OUTPUT_DIR = 'output'

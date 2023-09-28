@@ -14,7 +14,7 @@ from subprocess import call
 from shutil import copy2
 from utils import add_title_img
 
-CSV_FILE = 'metadata-file-2023-testing.xlsx'
+CSV_FILE = 'metadata-file-2023.xlsx'
 IMG_BG_NAME = 'preview-background-2023.png'
 VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
 SHEET_NAME = 'metadata-file'
@@ -520,6 +520,7 @@ def get_duration(filename):
     return duration
 
 def merge(df, session_id, overwrite=False, strict=False):
+    print(f'\n\n------------------------\nAttempt to merge videos for session {session_id}\n------------------------\n')
     df = df.loc[df['session_id'] == session_id]
     assert df.shape[0] > 0
     session_name = list(df['session_name'])[0]
@@ -534,7 +535,7 @@ def merge(df, session_id, overwrite=False, strict=False):
         else: print(f'Some videos are missing in {session_folder} : {",".join(paper_ids)}. Still generating though.')
     filelist = [filename for filename in filelist if '.mp4' in filename]
     n = len(filelist)
-    print(filelist, n)
+    print(f'{n} files: \n{filelist}')
     durations = [get_duration(filename) for filename in filelist]
     # outfile = osp.join(output_vid_dir, f'{session_folder}.mp4'.replace('-', '_'))
     outfile = osp.join(output_vid_dir, f'{session_folder}.mp4').replace('&', '_')

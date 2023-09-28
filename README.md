@@ -15,17 +15,17 @@ VIS23-VP
 ├── preview-background-2023.png
 │
 ├── Video and Subtitles by Session
-│ └── MAIN CONFERENCE
-│ └── session 1 (e.g. full0-VIS Opening)
+│ └── MAIN CONFERENCE (get all files from https://drive.google.com/drive/folders/1pFwimftyVmth53dAbl2v3idKR59YDd4S)
+│   └── session 1 (e.g. full0-VIS Opening)
 │
 ├── output
-│ └── MAIN CONFERENCE
-│ ├── merged
-│ └── session 1 (e.g. full0-VIS Opening)
+│ └── MAIN CONFERENCE (get all files from https://drive.google.com/drive/folders/1VcjRnYwTCEtEj3fSQdzF-ApWETkfcP1C)
+│   ├── merged
+│   └── session 1 (e.g. full0-VIS Opening)
 ...
 ```
 ### Generate Merged Files
-1. If necessary, modify the line `CSV_FILE = 'metadata-file-2023-testing.xlsx'` to point to the correct file.
+1. If necessary, modify the line `CSV_FILE = 'metadata-file-2023.xlsx'` to point to the correct file (e.g., `'metadata-file-2023-testing.xlsx'` for testing purposes)
 2. Run the command:
     ```
     python conference.py
