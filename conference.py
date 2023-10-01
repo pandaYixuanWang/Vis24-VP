@@ -326,7 +326,10 @@ def generate_video(title_data, overwrite=False):
 
     input_file = title_data[3]
     info = probe( input_file )
-    filter  = '[0:v]trim=duration=5,fade=t=out:st=4.5:d=0.5[v0];'
+    filter  = '[0:v]trim=duration=5,fade=t=out:st=4.5:d=0.5[v0];' # ! title slide fade out to the 25s content
+    # filter  = '[0:v]trim=duration=5,fade=t=in:st=0:d=0.5[v0];' # ! proposed: prev content fade in to the title slide
+    # filter  = '[0:v]trim=duration=5[v0];' # ! proposed: no fade
+
     filter += 'aevalsrc=0:d=5[a0];'
     # filter += '[1:v]scale=w=1920:h=1080[v1];'
     filter += '[1:v]scale=w=1920:h=1080,setsar=1:1[v1];'  # ! add setsar=1:1 here to resolve error that SAR 81:256 does not match  SAR 1:1
