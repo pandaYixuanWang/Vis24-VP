@@ -2,6 +2,7 @@ Video and Subtitles by Session/*
 video_dir/*
 tmp.png
 output/*
+output-manual/*
 __pycache__
 VisVS23-env/
 .DS_Store
