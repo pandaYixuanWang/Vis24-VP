@@ -14,8 +14,8 @@ from subprocess import call
 from shutil import copy2
 from utils import add_title_img
 
-CSV_FILE = 'metadata-file-2023.xlsx'
-IMG_BG_NAME = 'preview-background-2023.png'
+CSV_FILE = 'metadata-file-2024-testing.xlsx'
+IMG_BG_NAME = 'preview-background-2024.png'
 VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
 SHEET_NAME = 'metadata-file'
 OUTPUT_DIR = 'output/MAIN CONFERENCE'
@@ -143,15 +143,17 @@ def generate_img(title_data, overwrite=False):
         # Background Colour:
         # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Background
         # ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
-        ctx.set_source_rgba(0.992, 0.7294, 0.192, 1 ) # Gold background - 2023
+        # ctx.set_source_rgba(0.992, 0.7294, 0.192, 1 ) # Gold background - 2023
+        ctx.set_source_rgba(0.14510, 0.28235, 0.35686, 1) # Light Blue background - 2024
         ctx.fill()
         
         ctx.select_font_face( "Tahoma" )
         # Text Colour:
-        ctx.set_source_rgba( 0.31, 0.212, 0, 1 ) # dark brown Text
+        # ctx.set_source_rgba( 0.31, 0.212, 0, 1 ) # dark brown Text
         # ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 ) # Gold Text
         # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Text
         # ctx.set_source_rgba( 0.945, 0.341, 0.133, 1 ) # Orange Text
+        ctx.set_source_rgba(0.07843, 0.15686, 0.20000, 1) # Grey Text - 2024
         
         # Position: same line with paper type
         fontsize = 50
@@ -171,7 +173,8 @@ def generate_img(title_data, overwrite=False):
     # draw title
     ctx.select_font_face( "Tahoma" )
     # ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
-    ctx.set_source_rgba( 0.549, 0.22, 0, 1 ) # yellow - 2023
+    # ctx.set_source_rgba( 0.549, 0.22, 0, 1 ) # yellow - 2023
+    ctx.set_source_rgba(0.14510, 0.28235, 0.35686, 1) # Light Blue - 2024
 
     for fontsize in range( 60, 50, -2 ):
 
@@ -190,7 +193,8 @@ def generate_img(title_data, overwrite=False):
     # draw authors
     ctx.select_font_face( "Tahoma" )
     # ctx.set_source_rgba( 0.114, 0.192, 0.376, 1)
-    ctx.set_source_rgba( 0.769, 0.439, 0, 1)
+    # ctx.set_source_rgba( 0.769, 0.439, 0, 1)
+    ctx.set_source_rgba(0.97647, 0.63137, 0.22353) # Orange - 2024
     
     for author_fontsize in range( 50, 40, -2 ):
 
@@ -274,7 +278,8 @@ def generate_session_img(png_file, session_name, session_time, overwrite=False):
     # draw title
     ctx.select_font_face( "Tahoma Bold" )
     # ctx.set_source_rgba( 0.64, 0.04, 0.21, 1 )
-    ctx.set_source_rgba( 0.549, 0.22, 0, 1 ) # yellow - 2023
+    # ctx.set_source_rgba( 0.549, 0.22, 0, 1 ) # yellow - 2023
+    ctx.set_source_rgba(0.14510, 0.28235, 0.35686, 1) # Light Blue - 2024
 
     for fontsize in range( 60, 50, -2 ):
 
@@ -293,8 +298,9 @@ def generate_session_img(png_file, session_name, session_time, overwrite=False):
     # draw authors
     ctx.select_font_face( "Tahoma" )
     # ctx.set_source_rgba( 0.114, 0.192, 0.376, 1)
-    ctx.set_source_rgba( 0.769, 0.439, 0, 1)
-
+    # ctx.set_source_rgba( 0.769, 0.439, 0, 1)
+    ctx.set_source_rgba(0.97647, 0.63137, 0.22353) # Orange - 2024
+    
     for author_fontsize in range( 50, 40, -2 ):
 
         ctx.set_font_size( author_fontsize )
@@ -471,10 +477,10 @@ def type_convert(paper_id):
 
 def time_convert(session_time):
     TIME_MAP = {
-        '1': '09:00-10:15',
-        '2': '10:45-12:00',
-        '3': '14:00-15:15',
-        '4': '15:45-17:00',
+        '1': '08:30-9:45',
+        '2': '10:15-11:30',
+        '3': '13:30-14:45',
+        '4': '15:15-16:30',
     }
     if session_time[-1] in TIME_MAP: return TIME_MAP[session_time[-1]]
     raise NotImplementedError('unknown session_time:', session_time)
@@ -482,11 +488,11 @@ def time_convert(session_time):
 
 def date_convert(session_date):
     DATE_MAP = {
-        'mon': 'Monday (Oct 23)',
-        'tue': 'Tuesday (Oct 24)',
-        'wed': 'Wednesday (Oct 25)',
-        'thu': 'Thursday (Oct 26)',
-        'fri': 'Friday (Oct 27)',
+        'mon': 'Monday (Oct 14)',
+        'tue': 'Tuesday (Oct 15)',
+        'wed': 'Wednesday (Oct 16)',
+        'thu': 'Thursday (Oct 17)',
+        'fri': 'Friday (Oct 18)',
     }
     if session_date[0:3] in DATE_MAP: return DATE_MAP[session_date[0:3]]
     raise NotImplementedError('unknown session_date:', session_date)

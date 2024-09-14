@@ -4,6 +4,6 @@ tmp.png
 output/*
 output-manual/output*
 __pycache__
-VisVS23-env/
+vis24-env/
 .DS_Store
 tempCodeRunnerFile.py

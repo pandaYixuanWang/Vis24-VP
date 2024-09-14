@@ -1,18 +1,32 @@
-# Vis23-VP
+# Vis24-VP
+
 ### Requirements
 - **Operating System**: Due to filename constraints, Linux or MacOS is recommended.
-- **Dependencies**: Install the required libraries. recommending `conda-forge`.
-    ```
-    pandas cairocffi sqlalchemy pyyaml tqdm
-    ```
+- **Dependencies**: 
+
+Install the required python libraries via `pip install -r requirements.txt`.
+
+Additional required libraries, ffmpeg and cairo. (*Note: if cairo is installed through brew under MacOS, it is required to create a python environment through **brew's Python** to use it.*)
+
+MacOS
+```bash
+brew install cairo
+brew install ffmpeg
+```
+
+Linux
+```bash
+apt-get install libcairo2-dev
+apt-get install ffmpeg
+```
 
 ```
-VIS23-VP
+VIS24-VP
 │
 ├── main.py
 ├── conference.py
-├── metadata-file-2023.xlsx
-├── preview-background-2023.png
+├── metadata-file-2024.xlsx
+├── preview-background-2024.png
 │
 ├── Video and Subtitles by Session
 │ └── MAIN CONFERENCE (get all files from https://drive.google.com/drive/folders/1pFwimftyVmth53dAbl2v3idKR59YDd4S)
@@ -25,9 +39,9 @@ VIS23-VP
 ...
 ```
 ### Generate Merged Files
-1. If necessary, modify the line `CSV_FILE = 'metadata-file-2023.xlsx'` to point to the correct file (e.g., `'metadata-file-2023-testing.xlsx'` for testing purposes)
+1. If necessary, modify the line `CSV_FILE = 'metadata-file-2024.xlsx'` to point to the correct file (e.g., `'metadata-file-2024-testing.xlsx'` for testing purposes)
 2. Run the command:
-    ```
+    ```bash
     python conference.py
     ```
 
@@ -42,6 +56,35 @@ To remove the concatenated files and only keep the files with session titles (e.
     python os_utils.py
     ```
   - Modify `EXE_FOLDER` to `"output/POSTER"` if necessary.
+
+### Changes from Vis23-VP
+1. Updated the description of dependecies.
+2. Generated a new `preview-background-2024` title background template with the updated color scheme. The source file was named as `preview-background-2024.psd`.
+3. Update the text color scheme to match this year's theme (conference.py).
+    ```python
+    ctx.set_source_rgba(0.14510, 0.28235, 0.35686, 1) # Light Blue background - 2024
+    ctx.set_source_rgba(0.14510, 0.28235, 0.35686, 1) # Light Blue - 2024
+    ctx.set_source_rgba(0.07843, 0.15686, 0.20000, 1) # Grey Text - 2024
+    ctx.set_source_rgba(0.97647, 0.63137, 0.22353) # Orange - 2024
+    ```
+4. Update the date and time mapping.
+    ```python
+    TIME_MAP = {
+        '1': '08:30-9:45',
+        '2': '10:15-11:30',
+        '3': '13:30-14:45',
+        '4': '15:15-16:30',
+    }
+
+    DATE_MAP = {
+        'mon': 'Monday (Oct 14)',
+        'tue': 'Tuesday (Oct 15)',
+        'wed': 'Wednesday (Oct 16)',
+        'thu': 'Thursday (Oct 17)',
+        'fri': 'Friday (Oct 18)',
+    }
+    ```
+
 
 
 ### Changes from Vis22-VP
