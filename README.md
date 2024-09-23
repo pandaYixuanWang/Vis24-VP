@@ -6,7 +6,7 @@
 
 Install the required python libraries via `pip install -r requirements.txt`.
 
-Additional required libraries, ffmpeg and cairo. (*Note: if cairo is installed through brew under MacOS, it is required to create a python environment through **brew's Python** to use it.*)
+Additional required libraries, ffmpeg and cairo. (*Note: if cairo is installed through brew under MacOS, it is required to use the python from **brew**.*)
 
 MacOS
 ```bash
@@ -25,22 +25,23 @@ VIS24-VP
 │
 ├── main.py
 ├── conference.py
-├── metadata-file-2024.xlsx
+├── metadata-file-2024-testing.xlsx
 ├── preview-background-2024.png
 │
 ├── Video and Subtitles by Session
-│ └── MAIN CONFERENCE (get all files from https://drive.google.com/drive/folders/1pFwimftyVmth53dAbl2v3idKR59YDd4S)
+│ └── MAIN CONFERENCE (get all files from get all files from [TO BE UPDATE])
 │   └── session 1 (e.g. full0-VIS Opening)
 │
 ├── output
-│ └── MAIN CONFERENCE (get all files from https://drive.google.com/drive/folders/1VcjRnYwTCEtEj3fSQdzF-ApWETkfcP1C)
+│ └── MAIN CONFERENCE (get all files from [TO BE UPDATE])
 │   ├── merged
 │   └── session 1 (e.g. full0-VIS Opening)
 ...
 ```
-### Generate Merged Files
+### Instructions of Generating Merged Files
 1. If necessary, modify the line `CSV_FILE = 'metadata-file-2024.xlsx'` to point to the correct file (e.g., `'metadata-file-2024-testing.xlsx'` for testing purposes)
-2. Run the command:
+2. Download the preview videos and place them in their appropriate locations. For instance, for a paper with id: `v-full-1833` under the session named `Preview Test` with session ID `cga2`, the preview video should be located at: `./Video and Subtitles by Session/MAIN CONFERENCE/cga2-Preview Test/v-full-1833_Preview.mp4`.
+3. Run the following command to automatically generate the video with cover. The output files will be saved to the output folder.
     ```bash
     python conference.py
     ```
