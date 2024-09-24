@@ -488,6 +488,7 @@ def time_convert(session_time):
 
 def date_convert(session_date):
     DATE_MAP = {
+        'sun': 'Sunday (Oct 13)',
         'mon': 'Monday (Oct 14)',
         'tue': 'Tuesday (Oct 15)',
         'wed': 'Wednesday (Oct 16)',
