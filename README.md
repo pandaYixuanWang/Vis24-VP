@@ -78,6 +78,7 @@ To remove the concatenated files and only keep the files with session titles (e.
     }
 
     DATE_MAP = {
+        'sun': 'Sunday (Oct 13)',
         'mon': 'Monday (Oct 14)',
         'tue': 'Tuesday (Oct 15)',
         'wed': 'Wednesday (Oct 16)',
