@@ -44,11 +44,9 @@ VIS24-VP
 3. Run the following command to automatically generate the video with cover. The output files will be saved to the output folder.
     ```bash
     python conference.py
-    ```
-or 
-    ```bash
     python conference_workshop.py
     ```
+
 For each `.mp4` and `.srt` file corresponding to a paper under a session folder (e.g. `x.mp4` and `x.srt`), in the output folder with the same file structure, this will produce:
 - `x.mp4`, `x.srt`, `x.png` - A title slide (5 sec) followed by the original video (25 sec), totaling 30 seconds.
 - `session_name.mp4`, `session_name.srt` - A concatenation of all the `x.mp4` and `x.srt` files in the session folder.
