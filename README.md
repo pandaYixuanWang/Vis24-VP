@@ -93,6 +93,15 @@ To remove the concatenated files and only keep the files with session titles (e.
     }
     ```
 
+5. We have a seperate script for running videos for Workshop paper `confderence_workshop.py`, using the data `metadata-file-2024-workshop-paper.xlsx`
+
+6. We clean the data first to replace all the  ": " with the "-" in the session name, as the folder name cannot include the ":".
+In the script we use the code to convert the "-" to ": " to present the correct name for session in videos.
+ ```
+    .replace('-', ': ', 1)
+ ```
+
+7. remove the code for merging videos as we do need it (confirmed with Tech chairs)
 
 
 
@@ -150,16 +159,7 @@ Some errors were addressed and solutions implemented:
 - Added a function to refine subtitle formatting in           `refine_subtitle_format()`.
 
 
-##### Other notes in 2024 Version
-- We have a seperate script for running videos for Workshop paper `confderence_workshop.py`, using the data `metadata-file-2024-workshop-paper.xlsx`
 
-- We clean the data first to replace all the  ": " with the "-" in the session name, as the folder name cannot include the ":".
-In the script we use the code to convert the "-" to ": " to present the correct name for session in videos.
- ```
-    .replace('-', ': ', 1)
- ```
-
-- remove the code for merging videos as we do need it (confirmed with Tech chairs)
 
  
 
