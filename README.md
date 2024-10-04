@@ -45,7 +45,10 @@ VIS24-VP
     ```bash
     python conference.py
     ```
-
+or 
+    ```bash
+    python conference_workshop.py
+    ```
 For each `.mp4` and `.srt` file corresponding to a paper under a session folder (e.g. `x.mp4` and `x.srt`), in the output folder with the same file structure, this will produce:
 - `x.mp4`, `x.srt`, `x.png` - A title slide (5 sec) followed by the original video (25 sec), totaling 30 seconds.
 - `session_name.mp4`, `session_name.srt` - A concatenation of all the `x.mp4` and `x.srt` files in the session folder.
@@ -75,7 +78,12 @@ To remove the concatenated files and only keep the files with session titles (e.
         '2': '10:15-11:30',
         '3': '13:30-14:45',
         '4': '15:15-16:30',
-    }
+    }     # for short and full paper
+
+    TIME_MAP = {
+        '1': '08:30-11:30',
+        '3': '13:30-16:30',
+    }     # for workshop
 
     DATE_MAP = {
         'sun': 'Sunday (Oct 13)',
@@ -86,6 +94,7 @@ To remove the concatenated files and only keep the files with session titles (e.
         'fri': 'Friday (Oct 18)',
     }
     ```
+
 
 
 
@@ -143,7 +152,16 @@ Some errors were addressed and solutions implemented:
 - Added a function to refine subtitle formatting in           `refine_subtitle_format()`.
 
 
+##### Other notes in 2024 Version
+- We have a seperate script for running videos for Workshop paper `confderence_workshop.py`, using the data `metadata-file-2024-workshop-paper.xlsx`
 
+- We clean the data first to replace all the  ": " with the "-" in the session name, as the folder name cannot include the ":".
+In the script we use the code to convert the "-" to ": " to present the correct name for session in videos.
+ ```
+    .replace('-', ': ', 1)
+ ```
+
+- remove the code for merging videos as we do need it (confirmed with Tech chairs)
 
  
 

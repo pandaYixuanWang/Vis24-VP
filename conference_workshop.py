@@ -14,7 +14,7 @@ from subprocess import call
 from shutil import copy2
 from utils import add_title_img
 
-CSV_FILE = 'metadata-file-2024.xlsx'
+CSV_FILE = 'metadata-file-2024-workshop-paper.xlsx'
 IMG_BG_NAME = 'preview-background-2024.png'
 VIDEO_DIR = 'Video and Subtitles by Session/MAIN CONFERENCE'
 SHEET_NAME = 'metadata-file'
@@ -73,7 +73,6 @@ def generate_img(title_data, overwrite=False):
 
     # png_file = osp.join(title_img_dir, Path(title_data[3]).stem + '.png')
     png_file = osp.join(Path(title_data[5]).parent, Path(title_data[5]).stem + '.png')
-
     if osp.exists(png_file) and not overwrite:
         return
    
@@ -310,7 +309,6 @@ def generate_session_img(png_file, session_name, session_time, overwrite=False):
             break
 
     draw_text( lines, 125, 725, 35 )
-    print("[debug] png_file: ", png_file)
     final.write_to_png( png_file )
     copy2(png_file, title_img_dir)
 
@@ -464,24 +462,32 @@ def get_video_filename(input_dir, filename):
 #     raise NotImplementedError('unknown session_id: ', session_id)
 
 def type_convert(paper_id):
-    if 'v-cga' in paper_id: return 'CG&A Paper'
-    if 'v-short' in paper_id: return 'VIS Short Paper'
-    if 'v-siggraph' in paper_id: return 'SIGGRAPH Paper'
-    if 'v-vr' in paper_id: return 'VR Paper'
-    if 'v-full' in paper_id: return 'VIS Full Paper'
-    if 'v-tvcg' in paper_id: return 'TVCG Paper'
-    if 'v-ismar' in paper_id: return 'ISMAR Paper'
-    if 'v-vr' in paper_id: return 'VR Paper'
+    # if 'v-cga' in paper_id: return 'CG&A Paper'
+    # if 'v-short' in paper_id: return 'VIS Short Paper'
+    # if 'v-siggraph' in paper_id: return 'SIGGRAPH Paper'
+    # if 'v-vr' in paper_id: return 'VR Paper'
+    # if 'v-full' in paper_id: return 'VIS Full Paper'
+    # if 'v-tvcg' in paper_id: return 'TVCG Paper'
+    # if 'v-ismar' in paper_id: return 'ISMAR Paper'
+    # if 'v-vr' in paper_id: return 'VR Paper'
+    if 'w-' in paper_id: return 'Workshop Paper'
+    if 'a-' in paper_id: return 'Symposia Paper'
+    if 'vds' in paper_id: return 'Symposia Paper'
+
     raise NotImplementedError('unknown paper_id: ', paper_id)
 
 
 
 def time_convert(session_time):
+    # TIME_MAP = {
+    #     '1': '08:30-9:45',
+    #     '2': '10:15-11:30',
+    #     '3': '13:30-14:45',
+    #     '4': '15:15-16:30',
+    # }
     TIME_MAP = {
-        '1': '08:30-9:45',
-        '2': '10:15-11:30',
-        '3': '13:30-14:45',
-        '4': '15:15-16:30',
+        '1': '08:30-11:30',
+        '3': '13:30-16:30',
     }
     if session_time[-1] in TIME_MAP: return TIME_MAP[session_time[-1]]
     raise NotImplementedError('unknown session_time:', session_time)
@@ -535,6 +541,7 @@ def merge(df, session_id, overwrite=False, strict=False):
     df = df.loc[df['session_id'] == session_id]
     assert df.shape[0] > 0
     session_name = list(df['session_name'])[0]
+    session_name = session_name.replace('-', ': ', 1)
     session_time = 'tues2' if session_id == 'full1' else list(df['session'])[0]
     session_time = time_convert(session_time) + ', ' + date_convert(session_time)
     session_folder = session_folder_convert(session_id, session_name)
@@ -685,7 +692,7 @@ if __name__ == '__main__':
         if video_filename == '' or not check(input_video_filename):
             print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
             continue
-
+        
         row['session_name'] = row['session_name'].replace('-', ': ', 1)
         video_metadata = [type_convert(row['paper_id']),
                         row['title'],
@@ -695,6 +702,7 @@ if __name__ == '__main__':
                         output_video_filename,
                         row['award']
                         ]
+        print("GENERATED METADATA: ", video_metadata)
         try:
             generate_img(video_metadata)
             msg = generate_video(video_metadata)
