@@ -30,12 +30,12 @@ VIS24-VP
 │
 ├── Video and Subtitles by Session
 │ └── MAIN CONFERENCE (get all files from get all files from [TO BE UPDATE])
-│   └── session 1 (e.g. full0-VIS Opening)
+│   └── session 1 (session_id + '-' + session_name, e.g. full0-VIS Opening)
 │
 ├── output
 │ └── MAIN CONFERENCE (get all files from [TO BE UPDATE])
 │   ├── merged
-│   └── session 1 (e.g. full0-VIS Opening)
+│   └── session 1 (session_id + '-' + session_name, e.g. full0-VIS Opening)
 ...
 ```
 ### Instructions of Generating Merged Files
