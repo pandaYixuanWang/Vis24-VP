@@ -143,7 +143,7 @@ def generate_img(title_data, overwrite=False):
         # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Background
         # ctx.set_source_rgba(0.13, 0.447, 0.725, 1) # Light Blue Background
         # ctx.set_source_rgba(0.992, 0.7294, 0.192, 1 ) # Gold background - 2023
-        ctx.set_source_rgba(0.14510, 0.28235, 0.35686, 1) # Light Blue background - 2024
+        ctx.set_source_rgba(1, 0.765, 0.086, 1) # Yellow background - 2024
         ctx.fill()
         
         ctx.select_font_face( "Tahoma" )
@@ -152,7 +152,7 @@ def generate_img(title_data, overwrite=False):
         # ctx.set_source_rgba( 0.992, 0.7294, 0.192, 1 ) # Gold Text
         # ctx.set_source_rgba(0.114, 0.192, 0.376, 1) # Dark Blue Text
         # ctx.set_source_rgba( 0.945, 0.341, 0.133, 1 ) # Orange Text
-        ctx.set_source_rgba(0.07843, 0.15686, 0.20000, 1) # Grey Text - 2024
+        ctx.set_source_rgba(0.286, 0.286, 0.286, 1) # Grey Text - 2024
         
         # Position: same line with paper type
         fontsize = 50
