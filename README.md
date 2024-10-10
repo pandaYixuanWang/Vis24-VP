@@ -95,11 +95,8 @@ To remove the concatenated files and only keep the files with session titles (e.
 
 5. We have a seperate script for running videos for Workshop paper `confderence_workshop.py`, using the data `metadata-file-2024-workshop-paper.xlsx`
 
-6. We clean the data first to replace all the  ": " with the "-" in the session name, as the folder name cannot include the ":".
-In the script we use the code to convert the "-" to ": " to present the correct name for session in videos.
- ```
-    .replace('-', ': ', 1)
- ```
+6. We clean the data first to replace all the  ": " with the "-" in the session name, as the folder name cannot include the ":", stored in the 'session_name_as_folder_name' column. Using the data in this column as the input of the 'session_folder_conver()' function.
+
 
 7. remove the code for merging videos as we do need it (confirmed with Tech chairs)
 

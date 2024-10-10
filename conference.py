@@ -535,9 +535,10 @@ def merge(df, session_id, overwrite=False, strict=False):
     df = df.loc[df['session_id'] == session_id]
     assert df.shape[0] > 0
     session_name = list(df['session_name'])[0]
+    session_name_as_folder_name = list(df['session_name_as_folder_name'])[0]
     session_time = 'tues2' if session_id == 'full1' else list(df['session'])[0]
     session_time = time_convert(session_time) + ', ' + date_convert(session_time)
-    session_folder = session_folder_convert(session_id, session_name)
+    session_folder = session_folder_convert(session_id, session_name_as_folder_name)
     output_vid_dir = osp.join(OUTPUT_DIR, session_folder)
     filelist = [osp.join(output_vid_dir, get_video_filename(output_vid_dir, str(row['paper_id']))) for index, row in df.iterrows()]
     if not all(['.mp4' in filename for filename in filelist]):
@@ -669,7 +670,7 @@ if __name__ == '__main__':
     for index, (_, row) in enumerate(tqdm(clean_df.iterrows(), total=n_total, desc="Processing videos")): # add tqdm to show the current status
         if not pd.isna(row['session']): session_time = time_convert(row['session'])
         if not pd.isna(row['session']): session_date = date_convert(row['session'])
-        session_folder = session_folder_convert(row['session_id'], row['session_name'])
+        session_folder = session_folder_convert(row['session_id'], row['session_name_as_folder_name'])
         if session_folder == '':
             print(f'[{index}/{n_total}]', f'Error: could not find folder {session_folder}')
             continue
@@ -686,7 +687,7 @@ if __name__ == '__main__':
             print(f'[{index}/{n_total}]', f'Error: could not find video for {input_video_filename}, {video_filename}, {row["paper_id"]}')
             continue
 
-        row['session_name'] = row['session_name'].replace('-', ': ', 1)
+        # row['session_name'] = row['session_name'].replace('-', ': ', 1)
         video_metadata = [type_convert(row['paper_id']),
                         row['title'],
                         row['authors'],
